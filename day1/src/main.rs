@@ -77,10 +77,10 @@ impl Traveler {
     fn airdrop_at(landing_position: Position) -> Traveler {
         Traveler { position: landing_position }
     }
-    fn follow_all_pages(&self, document: &RecruitingDocument) -> Option<Position> {
+    fn follow(&self, document: &RecruitingDocument) -> (Position, Option<Position>) {
         let (mut position, mut direction) = (self.position, document.initial_direction);
         let mut visited = HashSet::new();
-        visited.insert(position);
+        let mut first_position_visited_twice = None;
         for instruction in &document.instructions {
             match *instruction {
                 Instruction::TurnRight => {
@@ -107,15 +107,15 @@ impl Traveler {
                             Direction::South => Position { y: position.y - 1, ..position },
                             Direction::West => Position { x: position.x - 1, ..position },
                         };
-                        if !visited.insert(position) {
+                        if !visited.insert(position) && first_position_visited_twice.is_none() {
                             // we've been here before
-                            return Some(position);
+                            first_position_visited_twice = Some(position);
                         }
                     }
                 }
             }
         }
-        None
+        (position, first_position_visited_twice)
     }
 }
 
@@ -127,16 +127,41 @@ fn main() {
         .expect("no input given");
     let document = RecruitingDocument::parse(&input);
     let me = Traveler::airdrop_at(document.starting_position);
-    let easter_bunny_hq = me.follow_all_pages(&document).expect("forged recruiting document!");
+    let easter_bunny_hq_positions = me.follow(&document);
     println!("Easter Bunny Headquarters distance: {}",
-             easter_bunny_hq.snake_distance(&me.position));
+             easter_bunny_hq_positions.0.snake_distance(&me.position));
+    if let Some(position) = easter_bunny_hq_positions.1 {
+        println!("Easter Bunny Headquarters distance (after careful read): {}",
+                 position.snake_distance(&me.position));
+    }
 }
 
 
 #[test]
-fn example() {
+fn part1_first_example() {
+    let document = RecruitingDocument::parse("R2, L3");
+    let me = Traveler::airdrop_at(document.starting_position);
+    assert_eq!(me.follow(&document).0.snake_distance(&me.position), 5);
+}
+
+#[test]
+fn part1_second_example() {
+    let document = RecruitingDocument::parse("R2, R2, R2");
+    let me = Traveler::airdrop_at(document.starting_position);
+    assert_eq!(me.follow(&document).0.snake_distance(&me.position), 2);
+}
+
+#[test]
+fn part1_third_example() {
+    let document = RecruitingDocument::parse("R5, L5, R5, R3");
+    let me = Traveler::airdrop_at(document.starting_position);
+    assert_eq!(me.follow(&document).0.snake_distance(&me.position), 12);
+}
+
+#[test]
+fn part2_single_example() {
     let document = RecruitingDocument::parse("R8, R4, R4, R8");
     let me = Traveler::airdrop_at(document.starting_position);
-    assert_eq!(me.follow_all_pages(&document).map(|pos| pos.snake_distance(&me.position)),
-               Some(4));
+    assert_eq!(me.follow(&document).1.map(|pos| pos.snake_distance(&me.position)).unwrap(),
+               4);
 }
