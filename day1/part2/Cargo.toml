@@ -1,0 +1,8 @@
+[package]
+name = "no_time_for_a_taxicab_part2"
+version = "0.1.0"
+authors = ["Alexandre Perrin <alex@kaworu.ch>"]
+
+[dependencies]
+regex = "0.1.80"
+rand = "0.3.15"
