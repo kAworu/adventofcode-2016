@@ -113,7 +113,7 @@ fn main() {
     let document = RecruitingDocument::parse(&input);
     let me = Traveler::airdrop_at(document.starting_position);
     let easter_bunny_hq = me.follow(&document);
-    println!("HQ distance: {}",
+    println!("Easter Bunny Headquarters distance: {}",
              easter_bunny_hq.snake_distance(&me.position));
 }
 
