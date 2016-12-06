@@ -80,24 +80,30 @@ impl Traveler {
         let (mut position, mut direction) = (self.position, document.initial_direction);
         for instruction in &document.instructions {
             match *instruction {
-                Instruction::TurnRight => direction = match direction {
-                    Direction::North => Direction::East,
-                    Direction::East  => Direction::South,
-                    Direction::South => Direction::West,
-                    Direction::West  => Direction::North,
-                },
-                Instruction::TurnLeft => direction = match direction {
-                    Direction::North => Direction::West,
-                    Direction::East  => Direction::North,
-                    Direction::South => Direction::East,
-                    Direction::West  => Direction::South,
-                },
-                Instruction::Walk(count) => position = match direction {
-                    Direction::North => Position { y: position.y + count, ..position },
-                    Direction::East  => Position { x: position.x + count, ..position },
-                    Direction::South => Position { y: position.y - count, ..position },
-                    Direction::West  => Position { x: position.x - count, ..position },
-                },
+                Instruction::TurnRight => {
+                    direction = match direction {
+                        Direction::North => Direction::East,
+                        Direction::East => Direction::South,
+                        Direction::South => Direction::West,
+                        Direction::West => Direction::North,
+                    }
+                }
+                Instruction::TurnLeft => {
+                    direction = match direction {
+                        Direction::North => Direction::West,
+                        Direction::East => Direction::North,
+                        Direction::South => Direction::East,
+                        Direction::West => Direction::South,
+                    }
+                }
+                Instruction::Walk(count) => {
+                    position = match direction {
+                        Direction::North => Position { y: position.y + count, ..position },
+                        Direction::East => Position { x: position.x + count, ..position },
+                        Direction::South => Position { y: position.y - count, ..position },
+                        Direction::West => Position { x: position.x - count, ..position },
+                    }
+                }
             }
         }
         position
