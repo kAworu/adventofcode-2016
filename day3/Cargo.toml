@@ -1,0 +1,7 @@
+[package]
+name = "squares_with_three_sides"
+version = "0.1.0"
+authors = ["Alexandre Perrin <alex@kaworu.ch>"]
+
+[dependencies]
+regex = "0.1.80"
