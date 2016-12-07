@@ -1,5 +1,3 @@
-extern crate regex;
-
 mod squares_with_three_sides {
 
     #[derive(Eq, PartialEq, Copy, Clone, Debug)]
@@ -11,9 +9,9 @@ mod squares_with_three_sides {
 
     impl Triangle {
         pub fn new(a: u32, b: u32, c: u32) -> Option<Triangle> {
-            let xs = [a, b, c];
-            let max = *xs.iter().max().unwrap();
-            let sum: u32 = xs.iter().sum();
+            let sides = [a, b, c];
+            let max = *sides.iter().max().unwrap();
+            let sum: u32 = sides.iter().sum();
             if (sum - max) > max {
                 Some(Triangle { a: a, b: b, c: c })
             } else {
@@ -25,27 +23,38 @@ mod squares_with_three_sides {
 
 
 use std::io::Read;
-use ::regex::Regex;
 use squares_with_three_sides::*;
 
 fn main() {
     let mut input = String::new();
     let stdin = std::io::stdin();
     stdin.lock().read_to_string(&mut input).expect("no input given");
-    let mut n = 0;
-    let re = Regex::new(r"^\s*(\d+)\s+(\d+)\s+(\d+)\s*$").unwrap();
+    let mut numbers: Vec<u32> = Vec::new();
     for line in input.lines() {
-        for cap in re.captures_iter(line) {
-            let a: u32 = cap.at(1).expect("invalid input").parse().expect("invalid input");
-            let b: u32 = cap.at(2).expect("invalid input").parse().expect("invalid input");
-            let c: u32 = cap.at(3).expect("invalid input").parse().expect("invalid input");
-            n += match Triangle::new(a, b, c) {
-                None => 0,
-                Some(_) => 1,
+        for part in line.split(" ") {
+            if let Ok(num) = part.parse::<u32>() {
+                numbers.push(num);
             }
         }
     }
-    println!("found {} valid triangles specifications on the graphic design department walls", n);
+
+    let mut rows: Vec<Option<Triangle>> = Vec::new();
+    let mut cols: Vec<Option<Triangle>> = Vec::new();
+    for chunk in numbers.chunks(9) {
+        if chunk.len() != 9 {
+            panic!("bad input");
+        }
+        rows.push(Triangle::new(chunk[0], chunk[1], chunk[2]));
+        rows.push(Triangle::new(chunk[3], chunk[4], chunk[5]));
+        rows.push(Triangle::new(chunk[6], chunk[7], chunk[8]));
+        cols.push(Triangle::new(chunk[0], chunk[3], chunk[6]));
+        cols.push(Triangle::new(chunk[1], chunk[4], chunk[7]));
+        cols.push(Triangle::new(chunk[2], chunk[5], chunk[8]));
+    }
+    println!("found {} valid triangles specifications on the graphic design department walls horizontally",
+             rows.iter().filter_map(|&x| x).count());
+    println!("found {} valid triangles specifications on the graphic design department walls vertically",
+             cols.iter().filter_map(|&x| x).count());
 }
 
 
