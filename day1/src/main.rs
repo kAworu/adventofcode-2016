@@ -127,8 +127,8 @@ mod no_time_for_a_taxicab {
     }
 }
 
-use no_time_for_a_taxicab::*;
 
+use no_time_for_a_taxicab::*;
 
 fn main() {
     let mut input = String::new();
