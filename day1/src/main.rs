@@ -194,6 +194,5 @@ fn part1_third_example() {
 fn part2_single_example() {
     let document: RecruitingDocument = "R8, R4, R4, R8".parse().unwrap();
     let me = Traveler::airdrop_at(*document.starting_position());
-    assert_eq!(me.follow(&document).1.map(|pos| pos.snake_distance(&me.position())).unwrap(),
-               4);
+    assert_eq!(me.follow(&document).1.unwrap().snake_distance(&me.position()), 4);
 }
