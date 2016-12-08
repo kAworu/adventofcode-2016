@@ -1,4 +1,5 @@
 mod bathroom_security {
+    use std::str::FromStr;
     use std::collections::{HashMap, HashSet};
 
     #[derive(Hash, Eq, PartialEq, Copy, Clone, Debug)]
@@ -9,7 +10,7 @@ mod bathroom_security {
 
     #[derive(Copy, Clone, Debug)]
     enum Direction {
-        Up = 0,
+        Up,
         Right,
         Down,
         Left,
@@ -45,29 +46,48 @@ mod bathroom_security {
     }
 
 
-    impl Keypad {
-        pub fn new(desc: &str) -> Option<Keypad> {
+    impl FromStr for Direction {
+        type Err = String;
+
+        fn from_str(s: &str) -> Result<Direction, String> {
+            match s {
+                "U" => Ok(Direction::Up),
+                "R" => Ok(Direction::Right),
+                "D" => Ok(Direction::Down),
+                "L" => Ok(Direction::Left),
+                _ => Err(format!("{}: unrecognized direction", s))
+            }
+        }
+    }
+
+    impl FromStr for Keypad {
+        type Err = String;
+
+        fn from_str(s: &str) -> Result<Keypad, String> {
             let mut unique: HashSet<KeypadButton> = HashSet::new();
             let mut buttons: HashMap<Point, KeypadButton> = HashMap::new();
-            for (y, line) in desc.lines().enumerate() {
+            for (y, line) in s.lines().enumerate() {
                 for (x, c) in line.chars().enumerate() {
                     if c == ' ' {
                         continue;
                     }
                     let button = KeypadButton(c);
                     if !unique.insert(button) {
-                        return None;
+                        return Err(format!("{:?}: already exist", button));
                     }
                     let position = Point { x: x as i32, y: y as i32 };
                     buttons.insert(position, button);
                 }
             }
-            Some(Keypad {
+            Ok(Keypad {
                 buttons: buttons,
                 current_button_position: None,
                 pressed: Vec::new(),
             })
         }
+    }
+
+    impl Keypad {
         fn current_button_is(&mut self, target: KeypadButton) -> Result<(), KeypadError> {
             for (position, button) in self.buttons.iter() {
                 if *button == target {
@@ -104,22 +124,19 @@ mod bathroom_security {
         }
     }
 
-    impl BathroomDocument {
-        pub fn parse(input: &str) -> Option<BathroomDocument> {
+    impl FromStr for BathroomDocument {
+        type Err = String;
+
+        fn from_str(s: &str) -> Result<BathroomDocument, String> {
             let mut instructions = Vec::new();
-            for line in input.lines() {
-                for c in line.chars() {
-                    instructions.push(match c {
-                        'U' => KeypadAction::Move(Direction::Up),
-                        'R' => KeypadAction::Move(Direction::Right),
-                        'D' => KeypadAction::Move(Direction::Down),
-                        'L' => KeypadAction::Move(Direction::Left),
-                        _ => return None,
-                    });
+            for line in s.lines() {
+                for i in 0..line.len() {
+                    let direction: Direction = try!(line[i..i + 1].parse());
+                    instructions.push(KeypadAction::Move(direction));
                 }
                 instructions.push(KeypadAction::Press);
             }
-            Some(BathroomDocument {
+            Ok(BathroomDocument {
                 start: KeypadButton('5'),
                 instructions: instructions,
             })
@@ -156,25 +173,33 @@ mod bathroom_security {
 use std::io::Read;
 use bathroom_security::*;
 
-fn main() {
-    let mut input = String::new();
-    let stdin = std::io::stdin();
-    stdin.lock().read_to_string(&mut input).expect("no input given");
-    let document = BathroomDocument::parse(&input).expect("bad bathroom document");
-    let mut keypad = Keypad::new("
+fn expected_bathroom_keypad() -> Keypad {
+"
 123
 456
 789
-").unwrap();
-    let code = BathroomCodeResolver::find_code(&document, &mut keypad).unwrap();
-    println!("the bathroom code is {}", code);
-    let mut keypad = Keypad::new("
+".parse().unwrap()
+}
+
+fn bathroom_actual_keypad() -> Keypad {
+"
   1
  234
 56789
  ABC
   D
-").unwrap();
+".parse().unwrap()
+}
+
+fn main() {
+    let mut input = String::new();
+    let stdin = std::io::stdin();
+    stdin.lock().read_to_string(&mut input).expect("no input given");
+    let document: BathroomDocument = input.parse().unwrap();
+    let mut keypad = expected_bathroom_keypad();
+    let code = BathroomCodeResolver::find_code(&document, &mut keypad).unwrap();
+    println!("the bathroom code is {}", code);
+    let mut keypad = bathroom_actual_keypad();
     let code = BathroomCodeResolver::find_code(&document, &mut keypad).unwrap();
     println!("wait no actually the bathroom code is {}", code);
 }
@@ -182,26 +207,16 @@ fn main() {
 
 #[test]
 fn part1_example() {
-    let document = BathroomDocument::parse("ULL\nRRDDD\nLURDL\nUUUUD").unwrap();
-    let mut keypad = Keypad::new("
-123
-456
-789
-").unwrap();
+    let document: BathroomDocument = "ULL\nRRDDD\nLURDL\nUUUUD".parse().unwrap();
+    let mut keypad = expected_bathroom_keypad();
     let code = BathroomCodeResolver::find_code(&document, &mut keypad);
     assert_eq!(code, Ok("1985".to_string()));
 }
 
 #[test]
 fn part2_example() {
-    let document = BathroomDocument::parse("ULL\nRRDDD\nLURDL\nUUUUD").unwrap();
-    let mut keypad = Keypad::new("
-  1
- 234
-56789
- ABC
-  D
-").unwrap();
+    let document: BathroomDocument = "ULL\nRRDDD\nLURDL\nUUUUD".parse().unwrap();
+    let mut keypad = bathroom_actual_keypad();
     let code = BathroomCodeResolver::find_code(&document, &mut keypad);
     assert_eq!(code, Ok("5DB3".to_string()));
 }
