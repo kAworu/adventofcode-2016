@@ -15,7 +15,7 @@ mod no_time_for_a_taxicab {
     }
 
     #[derive(Hash, Eq, PartialEq, Copy, Clone, Debug)]
-    pub struct Position {
+    pub struct Point {
         x: i32,
         y: i32,
     }
@@ -29,21 +29,21 @@ mod no_time_for_a_taxicab {
 
     #[derive(Debug)]
     pub struct RecruitingDocument {
-        starting_position: Position,
+        starting_position: Point,
         initial_direction: Direction,
         instructions: Vec<Instruction>,
     }
 
     #[derive(Debug)]
     pub struct Traveler {
-        position: Position,
+        position: Point,
     }
 
 
-    impl Position {
-        pub fn random() -> Position {
+    impl Point {
+        pub fn random() -> Point {
             let mut rng = ::rand::thread_rng();
-            Position {
+            Point {
                 x: rng.gen::<i16>() as i32,
                 y: rng.gen::<i16>() as i32,
             }
@@ -67,21 +67,21 @@ mod no_time_for_a_taxicab {
                 instructions.push(Instruction::Walk(count));
             }
             RecruitingDocument {
-                starting_position: Position::random(),
+                starting_position: Point::random(),
                 initial_direction: Direction::North,
                 instructions: instructions,
             }
         }
-        pub fn starting_position(&self) -> &Position {
+        pub fn starting_position(&self) -> &Point {
             &self.starting_position
         }
     }
 
     impl Traveler {
-        pub fn airdrop_at(landing_position: Position) -> Traveler {
+        pub fn airdrop_at(landing_position: Point) -> Traveler {
             Traveler { position: landing_position }
         }
-        pub fn follow(&self, document: &RecruitingDocument) -> (Position, Option<Position>) {
+        pub fn follow(&self, document: &RecruitingDocument) -> (Point, Option<Point>) {
             let (mut position, mut direction) = (self.position, document.initial_direction);
             let mut visited = HashSet::new();
             let mut first_position_visited_twice = None;
@@ -106,10 +106,10 @@ mod no_time_for_a_taxicab {
                     Instruction::Walk(count) => {
                         for _ in 0..count {
                             position = match direction {
-                                Direction::North => Position { y: position.y + 1, ..position },
-                                Direction::East => Position { x: position.x + 1, ..position },
-                                Direction::South => Position { y: position.y - 1, ..position },
-                                Direction::West => Position { x: position.x - 1, ..position },
+                                Direction::North => Point { y: position.y + 1, ..position },
+                                Direction::East => Point { x: position.x + 1, ..position },
+                                Direction::South => Point { y: position.y - 1, ..position },
+                                Direction::West => Point { x: position.x - 1, ..position },
                             };
                             if !visited.insert(position) && first_position_visited_twice.is_none() {
                                 // we've been here before
@@ -121,7 +121,7 @@ mod no_time_for_a_taxicab {
             }
             (position, first_position_visited_twice)
         }
-        pub fn position(&self) -> &Position {
+        pub fn position(&self) -> &Point {
             &self.position
         }
     }

@@ -2,7 +2,7 @@ mod bathroom_security {
     use std::collections::{HashMap, HashSet};
 
     #[derive(Hash, Eq, PartialEq, Copy, Clone, Debug)]
-    struct Position {
+    struct Point {
         x: i32,
         y: i32,
     }
@@ -26,8 +26,8 @@ mod bathroom_security {
 
     #[derive(Debug)]
     pub struct Keypad {
-        buttons: HashMap<Position, KeypadButton>,
-        current_button_position: Option<Position>,
+        buttons: HashMap<Point, KeypadButton>,
+        current_button_position: Option<Point>,
         pressed: Vec<KeypadButton>,
     }
 
@@ -48,7 +48,7 @@ mod bathroom_security {
     impl Keypad {
         pub fn new(desc: &str) -> Option<Keypad> {
             let mut unique: HashSet<KeypadButton> = HashSet::new();
-            let mut buttons: HashMap<Position, KeypadButton> = HashMap::new();
+            let mut buttons: HashMap<Point, KeypadButton> = HashMap::new();
             for (y, line) in desc.lines().enumerate() {
                 for (x, c) in line.chars().enumerate() {
                     if c == ' ' {
@@ -58,7 +58,7 @@ mod bathroom_security {
                     if !unique.insert(button) {
                         return None;
                     }
-                    let position = Position { x: x as i32, y: y as i32 };
+                    let position = Point { x: x as i32, y: y as i32 };
                     buttons.insert(position, button);
                 }
             }
@@ -87,10 +87,10 @@ mod bathroom_security {
                     }
                     KeypadAction::Move(direction) => {
                         let next_position = match direction {
-                            Direction::Up => Position { y: position.y - 1, ..position },
-                            Direction::Right => Position { x: position.x + 1, ..position },
-                            Direction::Down => Position { y: position.y + 1, ..position },
-                            Direction::Left => Position { x: position.x - 1, ..position },
+                            Direction::Up => Point { y: position.y - 1, ..position },
+                            Direction::Right => Point { x: position.x + 1, ..position },
+                            Direction::Down => Point { y: position.y + 1, ..position },
+                            Direction::Left => Point { x: position.x - 1, ..position },
                         };
                         if self.buttons.contains_key(&next_position) {
                             self.current_button_position = Some(next_position);
