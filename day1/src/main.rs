@@ -1,10 +1,9 @@
-extern crate regex;
 extern crate rand;
 
 mod no_time_for_a_taxicab {
+    use std::str::FromStr;
     use ::std::collections::HashSet;
     use ::rand::Rng;
-    use ::regex::Regex;
 
     #[derive(Copy, Clone, Debug)]
     enum Direction {
@@ -24,7 +23,7 @@ mod no_time_for_a_taxicab {
     enum Instruction {
         TurnRight,
         TurnLeft,
-        Walk(i32),
+        Walk(i32), // NOTE: i32 allow us walk backward
     }
 
     #[derive(Debug)]
@@ -53,27 +52,50 @@ mod no_time_for_a_taxicab {
         }
     }
 
-    impl RecruitingDocument {
-        pub fn parse(input: &str) -> RecruitingDocument {
-            let mut instructions = Vec::new();
-            let re = Regex::new(r"(R|L)(\d+)").unwrap();
-            for cap in re.captures_iter(input) {
-                instructions.push(if cap.at(1).unwrap() == "R" {
-                    Instruction::TurnRight
-                } else {
-                    Instruction::TurnLeft
-                });
-                let count: i32 = cap.at(2).unwrap().parse().unwrap();
-                instructions.push(Instruction::Walk(count));
+    impl FromStr for Instruction {
+        type Err = String;
+
+        fn from_str(s: &str) -> Result<Instruction, String> {
+            match s {
+                "R" => Ok(Instruction::TurnRight),
+                "L" => Ok(Instruction::TurnLeft),
+                _ => {
+                    if let Ok(stepcount) = s.parse::<i32>() {
+                        Ok(Instruction::Walk(stepcount))
+                    } else {
+                        Err(format!("{}: unrecognized walking step count", s))
+                    }
+                }
             }
-            RecruitingDocument {
+        }
+    }
+
+    impl RecruitingDocument {
+        pub fn starting_position(&self) -> &Point {
+            &self.starting_position
+        }
+    }
+
+    impl FromStr for RecruitingDocument {
+        type Err = String;
+
+        fn from_str(s: &str) -> Result<RecruitingDocument, String> {
+            let tokens: Vec<&str> = s.split(',').map(|s| s.trim()).collect();
+            let mut instructions = Vec::new();
+            for token in tokens.iter() {
+                if token.len() < 2 {
+                    return Err(format!("{}: unrecognized instruction", token));
+                }
+                let direction: Instruction = try!(token[..1].parse());
+                let stepcount: Instruction = try!(token[1..].parse());
+                instructions.push(direction);
+                instructions.push(stepcount);
+            }
+            Ok(RecruitingDocument {
                 starting_position: Point::random(),
                 initial_direction: Direction::North,
                 instructions: instructions,
-            }
-        }
-        pub fn starting_position(&self) -> &Point {
-            &self.starting_position
+            })
         }
     }
 
@@ -135,7 +157,7 @@ fn main() {
     std::io::stdin()
         .read_line(&mut input)
         .expect("no input given");
-    let document = RecruitingDocument::parse(&input);
+    let document: RecruitingDocument = input.parse().expect("bad input");
     let me = Traveler::airdrop_at(*document.starting_position());
     let easter_bunny_hq_positions = me.follow(&document);
     println!("Easter Bunny Headquarters distance: {}",
@@ -149,28 +171,28 @@ fn main() {
 
 #[test]
 fn part1_first_example() {
-    let document = RecruitingDocument::parse("R2, L3");
+    let document: RecruitingDocument = "R2, L3".parse().unwrap();
     let me = Traveler::airdrop_at(*document.starting_position());
     assert_eq!(me.follow(&document).0.snake_distance(me.position()), 5);
 }
 
 #[test]
 fn part1_second_example() {
-    let document = RecruitingDocument::parse("R2, R2, R2");
+    let document: RecruitingDocument = "R2, R2, R2".parse().unwrap();
     let me = Traveler::airdrop_at(*document.starting_position());
     assert_eq!(me.follow(&document).0.snake_distance(me.position()), 2);
 }
 
 #[test]
 fn part1_third_example() {
-    let document = RecruitingDocument::parse("R5, L5, R5, R3");
+    let document: RecruitingDocument = "R5, L5, R5, R3".parse().unwrap();
     let me = Traveler::airdrop_at(*document.starting_position());
     assert_eq!(me.follow(&document).0.snake_distance(me.position()), 12);
 }
 
 #[test]
 fn part2_single_example() {
-    let document = RecruitingDocument::parse("R8, R4, R4, R8");
+    let document: RecruitingDocument = "R8, R4, R4, R8".parse().unwrap();
     let me = Traveler::airdrop_at(*document.starting_position());
     assert_eq!(me.follow(&document).1.map(|pos| pos.snake_distance(&me.position())).unwrap(),
                4);
