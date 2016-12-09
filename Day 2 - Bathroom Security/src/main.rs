@@ -1,6 +1,8 @@
 mod bathroom_security {
-    use ::std::str::FromStr;
     use ::std::collections::HashMap;
+    use ::std::fmt::Display;
+    use ::std::ops::{Deref, DerefMut};
+    use ::std::str::FromStr;
 
     /// Represent a position on the keypad.
     #[derive(Hash, Eq, PartialEq, Copy, Clone, Debug)]
@@ -40,21 +42,38 @@ mod bathroom_security {
     #[derive(Hash, Eq, PartialEq, Copy, Clone, Debug)]
     pub struct KeypadButton(char);
 
-    /// Represent an input sequence of `KeypadButton`, newtype'd so we can to_string().
-    #[derive(Debug)]
-    pub struct KeypadButtonSequence(Vec<KeypadButton>);
+    impl Deref for KeypadButton {
+        type Target = char;
 
-    impl KeypadButtonSequence {
-        /// Trivial constructor.
-        fn new() -> KeypadButtonSequence {
-            KeypadButtonSequence(Vec::new())
+        fn deref(&self) -> &Self::Target {
+            &self.0
         }
     }
 
-    impl ::std::fmt::Display for KeypadButtonSequence {
+    /// Represent an input sequence of `KeypadButton`
+    ///
+    /// Newtype'd so we can to_string() and impl Deref and DerefMut to the underlying Vec.
+    #[derive(Debug)]
+    pub struct KeypadButtonSequence(Vec<KeypadButton>);
+
+    impl Deref for KeypadButtonSequence {
+        type Target = Vec<KeypadButton>;
+
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
+    }
+
+    impl DerefMut for KeypadButtonSequence {
+        fn deref_mut<'a>(&'a mut self) -> &'a mut Self::Target {
+            &mut self.0
+        }
+    }
+
+    impl Display for KeypadButtonSequence {
         /// Basically join each `KeypadButton` characters in self into a `String`.
         fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-            let s: String = self.0.iter().map(|&button| button.0).collect();
+            let s: String = self.iter().map(|&button| *button).collect();
             write!(f, "{}", s)
         }
     }
@@ -98,7 +117,7 @@ mod bathroom_security {
             if !self.has_button(target) {
                 return false;
             } else {
-                self.pressed.0.push(target);
+                self.pressed.push(target);
                 true
             }
         }
@@ -169,7 +188,7 @@ mod bathroom_security {
             Ok(Keypad {
                 positions_to_buttons: positions_to_buttons,
                 buttons_to_positions: buttons_to_positions,
-                pressed: KeypadButtonSequence::new(),
+                pressed: KeypadButtonSequence(Vec::new()),
             })
         }
     }
