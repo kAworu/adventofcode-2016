@@ -2,11 +2,7 @@ mod squares_with_three_sides {
 
     /// Represent a triangle with three sides length.
     #[derive(Eq, PartialEq, Copy, Clone, Debug)]
-    pub struct Triangle {
-        a: u32,
-        b: u32,
-        c: u32,
-    }
+    pub struct Triangle(u32, u32, u32);
 
     impl Triangle {
         /// Create a new triangle given its sides.
@@ -15,12 +11,12 @@ mod squares_with_three_sides {
         /// definition:
         /// > In a valid triangle, the sum of any two sides must be larger than
         /// > the remaining side.
-        pub fn new(a: u32, b: u32, c: u32) -> Option<Triangle> {
-            let sides = [a, b, c];
-            let max = *sides.iter().max().unwrap();
-            let sum: u32 = sides.iter().sum();
+        pub fn new(sides: (u32, u32, u32)) -> Option<Triangle> {
+            let xs = [sides.0, sides.1, sides.2];
+            let max = *xs.iter().max().unwrap();
+            let sum: u32 = xs.iter().sum();
             if (sum - max) > max {
-                Some(Triangle { a: a, b: b, c: c })
+                Some(Triangle(sides.0, sides.1, sides.2))
             } else {
                 None
             }
@@ -55,12 +51,12 @@ fn main() {
         if chunk.len() != 9 {
             panic!("bad input");
         }
-        rows.push(Triangle::new(chunk[0], chunk[1], chunk[2]));
-        rows.push(Triangle::new(chunk[3], chunk[4], chunk[5]));
-        rows.push(Triangle::new(chunk[6], chunk[7], chunk[8]));
-        cols.push(Triangle::new(chunk[0], chunk[3], chunk[6]));
-        cols.push(Triangle::new(chunk[1], chunk[4], chunk[7]));
-        cols.push(Triangle::new(chunk[2], chunk[5], chunk[8]));
+        rows.push(Triangle::new((chunk[0], chunk[1], chunk[2])));
+        rows.push(Triangle::new((chunk[3], chunk[4], chunk[5])));
+        rows.push(Triangle::new((chunk[6], chunk[7], chunk[8])));
+        cols.push(Triangle::new((chunk[0], chunk[3], chunk[6])));
+        cols.push(Triangle::new((chunk[1], chunk[4], chunk[7])));
+        cols.push(Triangle::new((chunk[2], chunk[5], chunk[8])));
     }
 
     // report.
@@ -73,5 +69,5 @@ fn main() {
 
 #[test]
 fn part1_example() {
-    assert_eq!(Triangle::new(5, 10, 25), None);
+    assert_eq!(Triangle::new((5, 10, 25)), None);
 }
