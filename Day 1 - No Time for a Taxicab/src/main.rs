@@ -112,7 +112,7 @@ mod no_time_for_a_taxicab {
     }
 
     impl RecruitingDocument {
-        /// Expose a public method to borrow a reference to the document's `starting_point`.
+        /// Borrow a reference to the document's `starting_point`.
         pub fn starting_point(&self) -> &Point {
             &self.starting_point
         }

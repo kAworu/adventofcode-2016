@@ -5,6 +5,8 @@ mod bathroom_security {
     use ::std::str::FromStr;
 
     /// Represent a position on the keypad.
+    ///
+    /// the 0,0 Point on the keypad is the very top-left corner.
     #[derive(Hash, Eq, PartialEq, Copy, Clone, Debug)]
     struct Point {
         x: i32,
