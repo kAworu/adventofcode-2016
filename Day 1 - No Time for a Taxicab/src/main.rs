@@ -88,7 +88,7 @@ mod no_time_for_a_taxicab {
         fn from_str(s: &str) -> Result<RecruitingDocument, String> {
             let tokens: Vec<&str> = s.split(',').map(|s| s.trim()).collect();
             let mut instructions = Vec::new();
-            for token in tokens.iter() {
+            for token in tokens.into_iter() {
                 if token.len() < 2 {
                     return Err(format!("{}: unrecognized instruction", token));
                 }
