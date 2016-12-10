@@ -34,17 +34,15 @@ fn main() {
     let stdin = std::io::stdin();
     stdin.lock().read_to_string(&mut input).expect("no input given");
 
-    // parse the input as an vector of u32.
+    // parse the input as a vector of u32.
     let mut numbers: Vec<u32> = Vec::new();
     for line in input.lines() {
-        for part in line.split(" ") {
-            if let Ok(num) = part.parse::<u32>() {
-                numbers.push(num);
-            }
+        for part in line.split_whitespace() {
+            numbers.push(part.parse().expect("bad input"));
         }
     }
 
-    // build vectors of triangle for each parts (rows is for part1, cols for part2).
+    // build vectors of triangle for each puzzle parts; rows is for part1, cols for part2.
     let mut rows: Vec<Option<Triangle>> = Vec::new();
     let mut cols: Vec<Option<Triangle>> = Vec::new();
     for chunk in numbers.chunks(9) {
