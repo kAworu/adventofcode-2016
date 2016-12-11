@@ -36,33 +36,37 @@ mod security_through_obscurity {
         ch == ']'
     }
 
+    /// Represent a `Room` encrypted name, implement the decryption and checksum logic.
     #[derive(Debug)]
     struct RoomEncryptedName(String);
 
     impl RoomEncryptedName {
         /// Compute the checksum according to the puzzle definition.
+        ///
+        /// > [...] the checksum is the five most common letters in the encrypted name, in order,
+        /// > with ties broken by alphabetization.
         fn checksum(&self) -> String {
-            // compute the frequency for each character in our encrypted_name.
+            // compute the frequency for each letter characters in our encrypted_name.
             let mut char_to_freq = HashMap::new();
-            for ch in self.0.chars() {
+            for ch in self.0.chars().filter(|&ch| is_ascii_lower(ch)) {
                 *char_to_freq.entry(ch).or_insert(0) += 1;
             }
-            // build a vector of tuple (char, frequency) from the hash (key, value) so we can sort.
+            // build a vector of tuple (char, frequency) from the hash (key, value) so we can sort
+            // our results.
             let mut vec: Vec<_> = char_to_freq.into_iter().collect();
-            vec.sort_by(|a, b| {
+            vec.sort_by(|&(cha, freqa), &(chb, freqb)| {
                 // compare by the frequency (value) in the descending order (i.e. the most frequent
                 // first), hence "b cmp a".
-                match b.1.cmp(&a.1) {
-                    // if a.0 and b.0 have the same frequency, "fallback" to the alphabetic
-                    // (ascending) order
-                    ::std::cmp::Ordering::Equal => a.0.cmp(&b.0),
+                match freqb.cmp(&freqa) {
+                    // if a and b have the same frequency: "fallback" to the alphabetic
+                    // (ascending) order, hence "a cmp b" this time.
+                    ::std::cmp::Ordering::Equal => cha.cmp(&chb),
                     less_or_greater             => less_or_greater,
                 }
             });
 
             vec.into_iter()
-                .map(|a| a.0) // map to the char, we don't need the frequency anymore
-                .filter(|&ch| is_ascii_lower(ch)) // keep only letters, i.e. drop the dash
+                .map(|(ch, _)| ch) // map to the char, we don't need the frequency anymore
                 .take(5) // the checksum is *the five* most common letters
                 .collect()
         }
@@ -70,23 +74,26 @@ mod security_through_obscurity {
         /// Decrypt self using the given key.
         ///
         /// Returns a decrypted representation of self.
-        fn decrypt(&self, key: u32) -> Option<String> {
+        // NOTE: Only dash and lower letters will be decrypted, other characters will be replaced
+        // by `?` (i.e. 0x3f). The puzzle `Room` encrypted names only contains dash and lower
+        // letters but this invariant is enforced at the `Room` level.
+        fn decrypt(&self, key: u32) -> String {
             // NOTE: % is the reminder operator in Rust, no modulus operator in the stdlib.
-            let mod26 = |x: u32| (x % 26) as u8;
-            let shift = mod26(key) as u32;
-            let mut plaintext = String::with_capacity(self.0.len());
-            for ch in self.0.chars() {
-                plaintext.push(if is_dash(ch) {
+            let mod26 = |x| (x % 26) as u8;
+            let char_to_enc = |ch| ch as u32 - 'a' as u32;
+            let dec_to_char = |dec| char::from('a' as u8 + dec);
+            let shift = mod26(key) as u32; // as u32 because we'll use it as mod26() input
+            self.0.chars().map(|ch| {
+                if is_dash(ch) {
                     ' '
                 } else if is_ascii_lower(ch) {
-                    let cipher = ch as u32 - 'a' as u32;
-                    let plain = mod26(cipher + shift);
-                    char::from('a' as u8 + plain)
-                } else {
-                    return None;
-                });
-            }
-            return Some(plaintext);
+                    let enc = char_to_enc(ch);
+                    let dec = mod26(enc + shift);
+                    dec_to_char(dec)
+                } else { // unexpected
+                    '?'
+                }
+            }).collect()
         }
     }
 
@@ -99,12 +106,15 @@ mod security_through_obscurity {
     }
 
     impl Room {
-        /// Returns true if a room is real, false otherwise.
-        ///
-        /// > A room is real (not a decoy) if the checksum is the five most common letters in the
-        /// > encrypted name, in order, with ties broken by alphabetization.
+        /// Returns true if a room is real (i.e. if its checksum is correct), false otherwise.
         pub fn is_real(&self) -> bool {
             self.encrypted_name.checksum() == self.checksum
+        }
+
+        /// Returns true if a room is not real (i.e. if its checksum is incorrect), false
+        /// otherwise.
+        pub fn is_decoy(&self) -> bool {
+            !self.is_real()
         }
 
         /// Returns the `Room` sector_id.
@@ -115,7 +125,6 @@ mod security_through_obscurity {
         /// Returns the decrypted `Room` name.
         pub fn name(&self) -> String {
             self.encrypted_name.decrypt(self.sector_id)
-                .expect("bug in Room parsing or RoomEncryptedName decrypt()")
         }
     }
 
@@ -133,7 +142,7 @@ mod security_through_obscurity {
         /// `a-b-c-d-e-f-g-h-987[abcde]`
         /// `not-a-real-room-404[oarel]`
         /// `totally-real-room-200[decoy]`
-        // We could just /^([a-z]+(?:-[a-z]+)*)-(\d+)\[[a-z]+\]$/
+        // We could just /^([a-z]+(?:-[a-z]+)*)-(\d+)\[[a-z]+\]$/ but meh
         fn from_str(s: &str) -> Result<Room, String> {
             let parse_error_for = |part, x| {
                 match x {
@@ -254,7 +263,7 @@ fn part1_third_example() {
 fn part1_fourth_example() {
     let room: Room = "totally-real-room-200[decoy]".parse().unwrap();
     println!("{:?}", room);
-    assert!(!room.is_real());
+    assert!(room.is_decoy());
 }
 
 #[test]
