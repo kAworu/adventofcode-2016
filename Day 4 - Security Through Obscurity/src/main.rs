@@ -189,6 +189,7 @@ mod security_through_obscurity {
                     x => return parse_error_for("checksum", x)
                 }
             }
+            // we're done parsing, don't allow the input to have more characters.
             if iter.peek().is_some() {
                 return parse_error_for("room", iter.next());
             }
@@ -221,14 +222,18 @@ fn main() {
     let stdin = std::io::stdin();
     stdin.lock().read_to_string(&mut input).expect("no input given");
 
+    // parse all the rooms, one per line of input.
     let mut rooms = Vec::new();
     for line in input.lines() {
         let room: Room = line.parse().expect("bad input");
         rooms.push(room);
     }
 
+    // compute the sum of the real room's sector ID
     let sum: u32 = rooms.iter().filter(|&r| r.is_real()).map(|r| r.sector_id()).sum();
     println!("The sum of the sector IDs of the real rooms is {}", sum);
+
+    // find the target!
     for room in rooms {
         let name = room.name();
         if name.contains("northpole") && name.contains("storage") {
