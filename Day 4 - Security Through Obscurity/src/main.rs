@@ -66,6 +66,28 @@ mod security_through_obscurity {
                 .take(5) // the checksum is *the five* most common letters
                 .collect()
         }
+
+        /// Decrypt self using the given key.
+        ///
+        /// Returns a decrypted representation of self.
+        fn decrypt(&self, key: u32) -> Option<String> {
+            // NOTE: % is the reminder operator in Rust, no modulus operator in the stdlib.
+            let mod26 = |x: u32| (x % 26) as u8;
+            let shift = mod26(key) as u32;
+            let mut plaintext = String::with_capacity(self.0.len());
+            for ch in self.0.chars() {
+                plaintext.push(if is_dash(ch) {
+                    ' '
+                } else if is_ascii_lower(ch) {
+                    let cipher = ch as u32 - 'a' as u32;
+                    let plain = mod26(cipher + shift);
+                    char::from('a' as u8 + plain)
+                } else {
+                    return None;
+                });
+            }
+            return Some(plaintext);
+        }
     }
 
     /// Represent a room from the list at the information kiosk
@@ -88,6 +110,12 @@ mod security_through_obscurity {
         /// Returns the `Room` sector_id.
         pub fn sector_id(&self) -> u32 {
             self.sector_id
+        }
+
+        /// Returns the decrypted `Room` name.
+        pub fn name(&self) -> String {
+            self.encrypted_name.decrypt(self.sector_id)
+                .expect("bug in Room parsing or RoomEncryptedName decrypt()")
         }
     }
 
@@ -192,6 +220,12 @@ fn main() {
 
     let sum: u32 = rooms.iter().filter(|&r| r.is_real()).map(|r| r.sector_id()).sum();
     println!("The sum of the sector IDs of the real rooms is {}", sum);
+    for room in rooms {
+        let name = room.name();
+        if name.contains("northpole") && name.contains("storage") {
+            println!("{} #{}", room.name(), room.sector_id());
+        }
+    }
 }
 
 
@@ -221,4 +255,10 @@ fn part1_fourth_example() {
     let room: Room = "totally-real-room-200[decoy]".parse().unwrap();
     println!("{:?}", room);
     assert!(!room.is_real());
+}
+
+#[test]
+fn part2_example() {
+    let room: Room = "qzmt-zixmtkozy-ivhz-343[incomplete]".parse().unwrap();
+    assert_eq!(room.name(), "very encrypted name");
 }
