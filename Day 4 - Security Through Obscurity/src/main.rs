@@ -12,7 +12,7 @@ mod security_through_obscurity {
 
     /// Returns true if the given character is a letter as defined by the puzzle — i.e. matching
     /// [a-z], false otherwise.
-    fn is_letter(ch: char) -> bool {
+    fn is_ascii_lower(ch: char) -> bool {
         // XXX: unstable see issue #32311
         // ('a'..'z').contains(ch);
         ch >= 'a' && ch <= 'z'
@@ -20,7 +20,7 @@ mod security_through_obscurity {
 
     /// Returns true if the given character is numeric as defined by the puzzle — i.e. matching
     /// [0-9], false otherwise.
-    fn is_numeric(ch: char) -> bool {
+    fn is_ascii_digit(ch: char) -> bool {
         // XXX: unstable see issue #32311
         // ('0'..'9').contains(ch);
         ch >= '0' && ch <= '9'
@@ -62,7 +62,7 @@ mod security_through_obscurity {
 
             vec.into_iter()
                 .map(|a| a.0) // map to the char, we don't need the frequency anymore
-                .filter(|&ch| is_letter(ch)) // keep only letters, i.e. drop the dash
+                .filter(|&ch| is_ascii_lower(ch)) // keep only letters, i.e. drop the dash
                 .take(5) // the checksum is *the five* most common letters
                 .collect()
         }
@@ -120,16 +120,16 @@ mod security_through_obscurity {
             // parse the encrypted name
             loop {
                 match iter.next() {
-                    Some(ch) if is_letter(ch) => encrypted_name.push(ch),
+                    Some(ch) if is_ascii_lower(ch) => encrypted_name.push(ch),
                     Some(ch) if is_dash(ch) => match iter.peek() {
                         // we don't accept encrypted name beginning with a dash
                         _ if encrypted_name.len() == 0 => return parse_error_for("encrypted name", Some(ch)),
                         // if the next character is numeric then this dash (ch) is the delimiter
                         // between the encrypted name and sector ID.
-                        Some(&next) if is_numeric(next) => break,
+                        Some(&next) if is_ascii_digit(next) => break,
                         // the encrypted name may contains dash but then we require the next
                         // character to be a letter
-                        Some(&next) if is_letter(next) => encrypted_name.push(ch),
+                        Some(&next) if is_ascii_lower(next) => encrypted_name.push(ch),
                         // this is unexpected, but we'll handle it at the next iteration.
                         _ => continue,
                     },
@@ -139,7 +139,7 @@ mod security_through_obscurity {
             // parse the sector ID
             loop {
                 match iter.next() {
-                    Some(ch) if is_numeric(ch) => sector_id.push(ch),
+                    Some(ch) if is_ascii_digit(ch) => sector_id.push(ch),
                     Some(ch) if is_left_square_bracket(ch) => break,
                     x => return parse_error_for("sector ID", x)
                 }
@@ -147,7 +147,7 @@ mod security_through_obscurity {
             // parse the checksum
             loop {
                 match iter.next() {
-                    Some(ch) if is_letter(ch) => checksum.push(ch),
+                    Some(ch) if is_ascii_lower(ch) => checksum.push(ch),
                     Some(ch) if is_right_square_bracket(ch) => break,
                     x => return parse_error_for("checksum", x)
                 }
