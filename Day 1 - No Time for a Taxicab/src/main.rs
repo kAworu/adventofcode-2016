@@ -148,26 +148,26 @@ mod no_time_for_a_taxicab {
                     Instruction::TurnRight => {
                         direction = match direction {
                             Direction::North => Direction::East,
-                            Direction::East => Direction::South,
+                            Direction::East  => Direction::South,
                             Direction::South => Direction::West,
-                            Direction::West => Direction::North,
+                            Direction::West  => Direction::North,
                         }
                     }
                     Instruction::TurnLeft => {
                         direction = match direction {
                             Direction::North => Direction::West,
-                            Direction::East => Direction::North,
+                            Direction::East  => Direction::North,
                             Direction::South => Direction::East,
-                            Direction::West => Direction::South,
+                            Direction::West  => Direction::South,
                         }
                     }
                     Instruction::Walk(count) => {
                         for _ in 0..count {
                             position = match direction {
                                 Direction::North => Point { y: position.y + 1, ..position },
-                                Direction::East => Point { x: position.x + 1, ..position },
+                                Direction::East  => Point { x: position.x + 1, ..position },
                                 Direction::South => Point { y: position.y - 1, ..position },
-                                Direction::West => Point { x: position.x - 1, ..position },
+                                Direction::West  => Point { x: position.x - 1, ..position },
                             };
                             if first_position_visited_twice.is_none() && !visited.insert(position) {
                                 first_position_visited_twice = Some(position);
@@ -190,11 +190,14 @@ mod no_time_for_a_taxicab {
 use no_time_for_a_taxicab::*;
 
 fn main() {
+    // acquire data from stdin, we only need the first line.
     let mut input = String::new();
-    std::io::stdin()
-        .read_line(&mut input)
-        .expect("no input given");
+    std::io::stdin().read_line(&mut input).expect("no input given");
+
+    // parse the document instructions.
     let document: RecruitingDocument = input.parse().expect("bad input");
+
+    // dive into action and compute.
     let me = Traveler::airdrop_at(*document.starting_point());
     let easter_bunny_hq_positions = me.follow(&document);
     println!("Easter Bunny Headquarters distance: {}",

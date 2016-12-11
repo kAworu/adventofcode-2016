@@ -217,7 +217,7 @@ use std::io::Read;
 use security_through_obscurity::*;
 
 fn main() {
-    // acquire data from stdin
+    // acquire data from stdin.
     let mut input = String::new();
     let stdin = std::io::stdin();
     stdin.lock().read_to_string(&mut input).expect("no input given");
