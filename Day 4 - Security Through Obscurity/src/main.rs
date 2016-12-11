@@ -229,12 +229,13 @@ fn main() {
         rooms.push(room);
     }
 
+    let real_rooms: Vec<_> = rooms.iter().filter(|&r| r.is_real()).collect();
     // compute the sum of the real room's sector ID
-    let sum: u32 = rooms.iter().filter(|&r| r.is_real()).map(|r| r.sector_id()).sum();
+    let sum: u32 = real_rooms.iter().map(|r| r.sector_id()).sum();
     println!("The sum of the sector IDs of the real rooms is {}", sum);
 
     // find the target!
-    for room in rooms {
+    for room in &real_rooms {
         let name = room.name();
         if name.contains("northpole") && name.contains("storage") {
             println!("{} #{}", room.name(), room.sector_id());
