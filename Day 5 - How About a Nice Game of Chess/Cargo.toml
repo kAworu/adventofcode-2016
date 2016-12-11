@@ -1,0 +1,8 @@
+[package]
+name = "how_about_a_nice_game_of_chess"
+version = "0.1.0"
+authors = ["Alexandre Perrin <alex@kaworu.ch>"]
+
+[dependencies]
+openssl = "0.9.3"
+try_opt = "0.1.1"
