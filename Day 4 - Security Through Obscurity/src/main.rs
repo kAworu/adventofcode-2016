@@ -228,8 +228,8 @@ fn main() {
         let room: Room = line.parse().expect("bad input");
         rooms.push(room);
     }
-
     let real_rooms: Vec<_> = rooms.iter().filter(|&r| r.is_real()).collect();
+
     // compute the sum of the real room's sector ID
     let sum: u32 = real_rooms.iter().map(|r| r.sector_id()).sum();
     println!("The sum of the sector IDs of the real rooms is {}", sum);
