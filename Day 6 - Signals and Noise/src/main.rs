@@ -61,7 +61,6 @@ mod signals_and_noise {
         }
     }
 
-
     /// Represents an error corrector device used to communicate with Santa when the signal is poor
     /// or jammed.
     #[derive(Debug)]
