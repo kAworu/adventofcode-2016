@@ -72,14 +72,16 @@ mod signals_and_noise {
             ErrorCorrector(Vec::new())
         }
 
-        /// Register a given character `ch` at the position `index`.
-        fn register(&mut self, ch: char, index: usize) {
+        /// Register a given message into the `ErrorCorrector`.
+        fn register(&mut self, message: &str) {
             let ref mut vec = self.0;
-            // ensure to have a CharFreq at self.0[index]
-            while vec.len() <= index {
-                vec.push(CharFreq::new());
+            for (index, ch) in message.chars().enumerate() {
+                // ensure to have a CharFreq at self.0[index]
+                while vec.len() <= index {
+                    vec.push(CharFreq::new());
+                }
+                *vec[index].entry(ch).or_insert(0) += 1;
             }
-            *vec[index].entry(ch).or_insert(0) += 1;
         }
 
         /// Compute and return the error-corrected message version using the simple repetition code
@@ -99,10 +101,8 @@ mod signals_and_noise {
 
         fn from_str(s: &str) -> Result<ErrorCorrector, Self::Err> {
             let mut ec = ErrorCorrector::new();
-            for line in s.lines() {
-                for (index, ch) in line.chars().enumerate() {
-                    ec.register(ch, index);
-                }
+            for message in s.lines() {
+                ec.register(message);
             }
             Ok(ec)
         }
@@ -128,7 +128,7 @@ fn main() {
 
 #[test]
 fn part1_example() {
-    let message = "\
+    let messages = "\
 eedadn
 drvtee
 eandsr
@@ -145,13 +145,13 @@ vntsnd
 vrdear
 dvrsen
 enarar";
-    let ec: ErrorCorrector = message.parse().unwrap();
+    let ec: ErrorCorrector = messages.parse().unwrap();
     assert_eq!(ec.src_message(), "easter".to_string());
 }
 
 #[test]
 fn part2_example() {
-    let message = "\
+    let messages = "\
 eedadn
 drvtee
 eandsr
@@ -168,6 +168,6 @@ vntsnd
 vrdear
 dvrsen
 enarar";
-    let ec: ErrorCorrector = message.parse().unwrap();
+    let ec: ErrorCorrector = messages.parse().unwrap();
     assert_eq!(ec.mrc_message(), "advent".to_string());
 }
