@@ -6,6 +6,7 @@ mod how_about_a_nice_game_of_chess {
     use ::openssl::hash;
 
     /// Iterator over the interesting hashes of door_id starting at index zero.
+    #[derive(Debug)]
     struct InterestingHashFinder<'a> {
         door_id: &'a [u8],
         index: u64,
@@ -33,7 +34,7 @@ mod how_about_a_nice_game_of_chess {
         /// > A hash indicates the next character in the password if its hexadecimal representation
         /// > starts with five zeroes.
         fn next(&mut self) -> Option<Self::Item> {
-            loop {
+            'critical: loop {
                 try_opt!(self.hasher.update(self.door_id).ok());
                 try_opt!(self.hasher.update(self.index.to_string().as_bytes()).ok());
                 // NOTE: finish() will reset the hasher state so we can reuse it later on.
@@ -53,6 +54,7 @@ mod how_about_a_nice_game_of_chess {
     const PASSWORD_LEN: usize = 8;
 
     /// Represent a security door designed by Easter Bunny engineers.
+    #[derive(Debug)]
     pub struct SecurityDoor {
         door_id: String,
     }
@@ -84,7 +86,7 @@ mod how_about_a_nice_game_of_chess {
         }
 
         /// Generate the password for the second door according to the Easter Bunny engineers
-        /// (still) questionable algorithm.
+        /// (still) questionable second (out-of-order) algorithm.
         ///
         /// # Errors
         ///
