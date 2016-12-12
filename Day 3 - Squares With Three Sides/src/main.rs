@@ -58,9 +58,11 @@ fn main() {
     }
 
     // report.
-    println!("found {} valid triangles specifications on the graphic design department walls horizontally",
+    println!("found {} valid triangles specifications on the graphic design department walls \
+              horizontally",
              rows.iter().filter_map(|&x| x).count());
-    println!("found {} valid triangles specifications on the graphic design department walls vertically",
+    println!("found {} valid triangles specifications on the graphic design department walls \
+              vertically",
              cols.iter().filter_map(|&x| x).count());
 }
 

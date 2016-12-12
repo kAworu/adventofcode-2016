@@ -170,7 +170,7 @@ mod security_through_obscurity {
                         // this is unexpected, but we'll handle it at the next iteration.
                         _ => continue,
                     },
-                    x => return parse_error_for("encrypted name", x)
+                    x => return parse_error_for("encrypted name", x),
                 }
             }
             // parse the sector ID
@@ -178,7 +178,7 @@ mod security_through_obscurity {
                 match iter.next() {
                     Some(ch) if is_ascii_digit(ch) => sector_id.push(ch),
                     Some(ch) if is_left_square_bracket(ch) => break,
-                    x => return parse_error_for("sector ID", x)
+                    x => return parse_error_for("sector ID", x),
                 }
             }
             // parse the checksum
@@ -186,7 +186,7 @@ mod security_through_obscurity {
                 match iter.next() {
                     Some(ch) if is_ascii_lower(ch) => checksum.push(ch),
                     Some(ch) if is_right_square_bracket(ch) => break,
-                    x => return parse_error_for("checksum", x)
+                    x => return parse_error_for("checksum", x),
                 }
             }
             // we're done parsing, don't allow the input to have more characters.

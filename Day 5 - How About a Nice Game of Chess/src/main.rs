@@ -6,7 +6,6 @@ mod how_about_a_nice_game_of_chess {
     use ::openssl::hash;
 
     /// Iterator over the interesting hashes of door_id starting at index zero.
-    #[derive(Debug)]
     struct InterestingHashFinder<'a> {
         door_id: &'a [u8],
         index: u64,
@@ -62,9 +61,7 @@ mod how_about_a_nice_game_of_chess {
     impl SecurityDoor {
         /// Create a new `SecurityDoor` given a door ID.
         pub fn new(door_id: &str) -> SecurityDoor {
-            SecurityDoor {
-                door_id: door_id.to_string(),
-            }
+            SecurityDoor { door_id: door_id.to_string() }
         }
 
         /// Generate the password for the first door according to the Easter Bunny engineers
@@ -75,9 +72,9 @@ mod how_about_a_nice_game_of_chess {
         /// When the password generation failed.
         pub fn first_password(&self) -> Result<String, String> {
             if let Some(gen) = InterestingHashFinder::new(&self.door_id) {
-                let password: String = gen.take(PASSWORD_LEN).filter_map(|hash_str| {
-                    hash_str.chars().nth(5)
-                }).collect();
+                let password: String = gen.take(PASSWORD_LEN)
+                    .filter_map(|hash_str| hash_str.chars().nth(5))
+                    .collect();
                 if password.len() == PASSWORD_LEN {
                     return Ok(password);
                 }
@@ -122,10 +119,12 @@ fn main() {
     std::io::stdin().read_line(&mut input).expect("no input given");
 
     let door = SecurityDoor::new(input.trim());
-    println!("The password of the first door(ID={}) is: {}", door.door_id(),
-        door.first_password().unwrap());
-    println!("The password of the second door(ID={}) is: {}", door.door_id(),
-        door.second_password().unwrap());
+    println!("The password of the first door(ID={}) is: {}",
+             door.door_id(),
+             door.first_password().unwrap());
+    println!("The password of the second door(ID={}) is: {}",
+             door.door_id(),
+             door.second_password().unwrap());
 }
 
 #[test]
