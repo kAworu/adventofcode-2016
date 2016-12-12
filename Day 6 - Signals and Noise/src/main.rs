@@ -18,12 +18,30 @@ mod signals_and_noise {
         /// If many characters are tied for the maximum frequency, the return value is one of them
         /// choosen arbitrarily. If self is empty, return `None`.
         fn most_frequent_character(&self) -> Option<char> {
+            // compare by the frequency (value) in the descending order (i.e. the most frequent
+            // first), hence "b cmp a".
+            self.first_char_sort_by_freq(|a, b| b.cmp(&a))
+        }
+
+        /// Returns the character having the minimum frequency.
+        ///
+        /// If many characters are tied for the minimum frequency, the return value is one of them
+        /// choosen arbitrarily. If self is empty, return `None`.
+        fn least_frequent_character(&self) -> Option<char> {
+            // compare by the frequency (value) in the ascending order (i.e. the least frequent
+            // first), hence "a cmp b".
+            self.first_char_sort_by_freq(|a, b| a.cmp(&b))
+        }
+
+        /// Returns the first character of self sorted by a given `cmp` comparison function on the
+        /// frequency.
+        fn first_char_sort_by_freq<F>(&self, mut cmp: F) -> Option<char>
+            where F: FnMut(&u32, &u32) -> ::std::cmp::Ordering
+        {
             // build a vector of tuple (char, frequency) from the hash (key, value) so we can sort
             // our results.
             let mut vec: Vec<_> = self.iter().collect();
-            // compare by the frequency (value) in the descending order (i.e. the most frequent
-            // first), hence "b cmp a".
-            vec.sort_by(|&(_, freqa), &(_, freqb)| freqb.cmp(&freqa));
+            vec.sort_by(|&(_, freqa), &(_, freqb)| cmp(freqa, freqb));
             // map to the char, we don't need the frequency anymore
             vec.into_iter().map(|(&ch, _)| ch).next()
         }
@@ -56,7 +74,7 @@ mod signals_and_noise {
         }
 
         /// Register a given character `ch` at the position `index`.
-        fn register(&mut self, ch:char, index: usize) {
+        fn register(&mut self, ch: char, index: usize) {
             let ref mut vec = self.0;
             // ensure to have a CharFreq at self.0[index]
             while vec.len() <= index {
@@ -65,9 +83,15 @@ mod signals_and_noise {
             *vec[index].entry(ch).or_insert(0) += 1;
         }
 
-        /// Compute and return the error-corrected message version.
-        pub fn message(&self) -> String {
+        /// Compute and return the error-corrected message version using the simple repetition code
+        /// protocol.
+        pub fn src_message(&self) -> String {
             self.0.iter().filter_map(|cfreq| cfreq.most_frequent_character()).collect()
+        }
+
+        /// Compute and return the original message using the modified repetition code protocol.
+        pub fn mrc_message(&self) -> String {
+            self.0.iter().filter_map(|cfreq| cfreq.least_frequent_character()).collect()
         }
     }
 
@@ -97,7 +121,9 @@ fn main() {
     stdin.lock().read_to_string(&mut input).expect("no input given");
 
     let ec: ErrorCorrector = input.parse().unwrap();
-    println!("The error-corrected version of the message is: {}", ec.message());
+    println!("The error-corrected version of the message is: {}",
+             ec.src_message());
+    println!("The original message is: {}", ec.mrc_message());
 }
 
 
@@ -121,5 +147,28 @@ vrdear
 dvrsen
 enarar";
     let ec: ErrorCorrector = message.parse().unwrap();
-    assert_eq!(ec.message(), "easter".to_string());
+    assert_eq!(ec.src_message(), "easter".to_string());
+}
+
+#[test]
+fn part2_example() {
+    let message = "\
+eedadn
+drvtee
+eandsr
+raavrd
+atevrs
+tsrnev
+sdttsa
+rasrtv
+nssdts
+ntnada
+svetve
+tesnvt
+vntsnd
+vrdear
+dvrsen
+enarar";
+    let ec: ErrorCorrector = message.parse().unwrap();
+    assert_eq!(ec.mrc_message(), "advent".to_string());
 }
