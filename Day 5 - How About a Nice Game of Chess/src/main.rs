@@ -58,6 +58,9 @@ mod how_about_a_nice_game_of_chess {
         door_id: String,
     }
 
+    // FIXME: merge first_password() and second_password() into one password fn returning
+    // Result<(String, String), String> that avoid to iter twice over "the same"
+    // InterestingHashFinder.
     impl SecurityDoor {
         /// Create a new `SecurityDoor` given a door ID.
         pub fn new(door_id: &str) -> SecurityDoor {
