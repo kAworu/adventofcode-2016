@@ -17,6 +17,6 @@ name`.
 
 **What is the sector ID** of the room where North Pole objects are stored?
 
-Although it hasn't changed, you can still get your [puzzle input](input.txt).
+Although it hasn't changed, you can still [get your puzzle input](input.txt).
 
 [shift cipher]: https://en.wikipedia.org/wiki/Caesar_cipher

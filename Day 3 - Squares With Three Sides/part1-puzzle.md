@@ -17,4 +17,4 @@ is not larger than `25`.
 
 In your puzzle input, **how many** of the listed triangles are **possible**?
 
-To begin, get your [puzzle input](input.txt).
+To begin, [get your puzzle input](input.txt).

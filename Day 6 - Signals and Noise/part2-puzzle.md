@@ -16,4 +16,4 @@ produces the original message, `advent`.
 Given the recording in your puzzle input and this new decoding methodology,
 **what is the original message** that Santa is trying to send?
 
-Although it hasn't changed, you can still get your [puzzle input](input.txt).
+Although it hasn't changed, you can still [get your puzzle input](input.txt).

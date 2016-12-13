@@ -22,4 +22,4 @@ Of the real rooms from the list above, the sum of their sector IDs is `1514`.
 
 What is the **sum of the sector IDs of the real rooms**?
 
-To begin, get your [puzzle input](input.txt).
+To begin, [get your puzzle input](input.txt).

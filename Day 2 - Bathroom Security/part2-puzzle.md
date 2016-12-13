@@ -27,4 +27,4 @@ So, given the actual keypad layout, the code would be `5DB3`.
 Using the same instructions in your puzzle input, what is the correct
 **bathroom code**?
 
-Although it hasn't changed, you can still get your [puzzle input](input.txt).
+Although it hasn't changed, you can still [get your puzzle input](input.txt).

@@ -19,4 +19,4 @@ digit would be part of the same triangle:
 In your puzzle input, and instead reading by columns, **how many** of the
 listed triangles are **possible**?
 
-Although it hasn't changed, you can still get your [puzzle input](input.txt).
+Although it hasn't changed, you can still [get your puzzle input](input.txt).

@@ -9,5 +9,4 @@ visit twice is `4` blocks away, due East.
 
 How many blocks away is the **first location you visit twice**?
 
-Although it hasn't changed, you can still
-[get your puzzle input](../input.txt).
+Although it hasn't changed, you can still [get your puzzle input](input.txt).

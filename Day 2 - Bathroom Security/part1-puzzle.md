@@ -48,4 +48,4 @@ So, in this example, the bathroom code is `1985`.
 Your puzzle input is the instructions from the document you found at the front
 desk. What is the **bathroom code**?
 
-To begin, get your [puzzle input](input.txt).
+To begin, [get your puzzle input](input.txt).

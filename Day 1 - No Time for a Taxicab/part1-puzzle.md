@@ -34,6 +34,6 @@ For example:
 
 **How many blocks away** is Easter Bunny HQ?
 
-To begin, get your [puzzle input](input.txt).
+To begin, [get your puzzle input](input.txt).
 
 [taxicab-geometry]: https://en.wikipedia.org/wiki/Taxicab_geometry
