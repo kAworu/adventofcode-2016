@@ -68,12 +68,12 @@ mod signals_and_noise {
 
     impl ErrorCorrector {
         /// Create a new `ErrorCorrector`
-        fn new() -> ErrorCorrector {
+        pub fn new() -> ErrorCorrector {
             ErrorCorrector(Vec::new())
         }
 
         /// Register a given message into the `ErrorCorrector`.
-        fn register(&mut self, message: &str) {
+        pub fn register(&mut self, message: &str) {
             let ref mut vec = self.0;
             for (index, ch) in message.chars().enumerate() {
                 // ensure to have a CharFreq at self.0[index]
@@ -119,7 +119,11 @@ fn main() {
     let stdin = std::io::stdin();
     stdin.lock().read_to_string(&mut input).expect("no input given");
 
-    let ec: ErrorCorrector = input.parse().unwrap();
+    let mut ec: ErrorCorrector = ErrorCorrector::new();
+    for message in input.lines() {
+        ec.register(message);
+    }
+
     println!("The error-corrected version of the message is: {}",
              ec.src_message());
     println!("The original message is: {}", ec.mrc_message());
