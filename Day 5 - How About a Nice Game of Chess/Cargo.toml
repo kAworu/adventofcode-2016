@@ -1,6 +1,6 @@
 [package]
 name = "how_about_a_nice_game_of_chess"
-version = "0.9.0"
+version = "1.0.0"
 authors = ["Alexandre Perrin <alex@kaworu.ch>"]
 
 [dependencies]
