@@ -222,7 +222,7 @@ mod bathroom_security {
                 // NOTE: loop through the line characters index and not .chars() so we can slice
                 // it, because `Direction` are parsed `FromStr`.
                 for i in 0..line.len() {
-                    let direction: Direction = try!(line[i..i + 1].parse());
+                    let direction: Direction = line[i..i + 1].parse()?;
                     instructions.push(KeypadAction::Move(direction));
                 }
                 instructions.push(KeypadAction::Press);

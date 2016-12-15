@@ -98,8 +98,8 @@ mod no_time_for_a_taxicab {
                 // - token == "LR"  would be parsed as (TurnLeft, TurnRight)
                 // - token == "R-1" would be parsed as (TurnRight, Walk(-1))
                 // Also negative numbers for Walk(_) could be accepted.
-                let direction: Instruction = try!(token[..1].parse());
-                let stepcount: Instruction = try!(token[1..].parse());
+                let direction: Instruction = token[..1].parse()?;
+                let stepcount: Instruction = token[1..].parse()?;
                 instructions.push(direction);
                 instructions.push(stepcount);
             }
