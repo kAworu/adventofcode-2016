@@ -1,9 +1,10 @@
 #![feature(pattern)]
 
 mod internet_protocol_version_7 {
+    use ::std::collections::VecDeque;
     use ::std::iter::{Peekable, Enumerate, Skip};
-    use ::std::str::{Chars, FromStr};
     use ::std::str::pattern::{Pattern, Searcher, SearchStep};
+    use ::std::str::{Chars, FromStr};
 
     const HYPERNET_START: char = '[';
     const HYPERNET_STOP:  char = ']';
@@ -69,12 +70,12 @@ mod internet_protocol_version_7 {
     struct AbbaSearcher<'a> {
         haystack: &'a str,
         iter: Skip<Enumerate<Chars<'a>>>,
-        last3: Vec<char>,
+        last3: VecDeque<char>,
     }
 
     impl<'a> AbbaSearcher<'a> {
         fn new(haystack: &'a str) -> AbbaSearcher<'a> {
-            let last3: Vec<_> = haystack.chars().take(3).collect();
+            let last3: VecDeque<_> = haystack.chars().take(3).collect();
             let iter = haystack.chars().enumerate().skip(3);
             AbbaSearcher {
                 haystack: haystack,
@@ -92,9 +93,8 @@ mod internet_protocol_version_7 {
             if let Some((index, current)) = self.iter.next() {
                 let (one, two, three) = (self.last3[0], self.last3[1], self.last3[2]);
                 let four = current;
-                self.last3[0] = two;
-                self.last3[1] = three;
-                self.last3[2] = four;
+                self.last3.pop_front();
+                self.last3.push_back(four);
                 if one == four && two == three && one != two {
                     SearchStep::Match(index - 3, index + 1)
                 } else {
