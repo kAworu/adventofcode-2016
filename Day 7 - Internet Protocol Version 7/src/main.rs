@@ -1,3 +1,4 @@
+// XXX: as of December 2016 the `pattern` API is unstable, see #27721
 #![feature(pattern)]
 
 mod internet_protocol_version_7 {
@@ -6,81 +7,130 @@ mod internet_protocol_version_7 {
     use ::std::str::pattern::{Pattern, Searcher, SearchStep};
     use ::std::str::{Chars, FromStr};
 
+    /// The hypernet start/stop markers in an `Ipv7Addr`.
     const HYPERNET_START: char = '[';
     const HYPERNET_STOP:  char = ']';
 
-    struct SubnetSearcher<'a> {
+    /// A `Searcher` matching both `Ipv7Addr` `Segments` types (i.e. hypernet and supernet).
+    struct SegmentSearcher<'a> {
         haystack: &'a str,
         iter: Peekable<Enumerate<Chars<'a>>>,
     }
 
-    impl<'a> SubnetSearcher<'a> {
-        fn new(haystack: &'a str) -> SubnetSearcher<'a> {
-            SubnetSearcher {
+    impl<'a> SegmentSearcher<'a> {
+        /// Create a new `SegmentSearcher`
+        fn new(haystack: &'a str) -> SegmentSearcher<'a> {
+            SegmentSearcher {
                 haystack: haystack,
                 iter: haystack.chars().enumerate().peekable(),
             }
         }
-    }
 
-    unsafe impl<'a> Searcher<'a> for SubnetSearcher<'a> {
-        fn haystack(&self) -> &'a str {
-            self.haystack
+        /// Matches a hypernet Segment, something like `[foo]`.
+        ///
+        /// # Panic
+        ///
+        /// when the next char is not the `HYPERNET_START` marker.
+        fn hypernet(&mut self) -> SearchStep {
+            // sanity check: look for the hypernet start marker.
+            let (start, lead) = self.iter.next().unwrap();
+            if lead != HYPERNET_START {
+                panic!(format!("expected {} (HYPERNET_START), got {}", HYPERNET_START, lead));
+            }
+            // find the matching hypernet stop marker.
+            if let Some((stop, _)) = self.iter.find(|&(_, ch)| ch == HYPERNET_STOP) {
+                // NOTE: (stop + 1) to include the HYPERNET_STOP in the match.
+                SearchStep::Match(start, stop + 1)
+            } else {
+                SearchStep::Reject(start, self.haystack.len())
+            }
         }
-        fn next(&mut self) -> SearchStep {
-            match self.iter.next() {
-                None => SearchStep::Done,
-                Some((start, lead)) if lead == HYPERNET_START => { // hypernet
-                    while let Some((pos, ch)) = self.iter.next() {
-                        if ch == HYPERNET_STOP {
-                            return SearchStep::Match(start, pos + 1);
-                        }
+
+        /// Matches a supernet Segment, something like `foo`.
+        ///
+        /// # Panic
+        ///
+        /// when the next char is the `HYPERNET_START` marker.
+        fn supernet(&mut self) -> SearchStep {
+            // sanity check: look for something else than the hypernet start marker.
+            let (start, lead) = self.iter.next().unwrap();
+            if lead == HYPERNET_START {
+                panic!(format!("unexpected {} (HYPERNET_START)", HYPERNET_START));
+            }
+            loop {
+                // NOTE: Because we don't want to "eat" the next HYPERNET_START marker from our
+                // iterator, we have to use peek() and "find by hand".
+                match self.iter.peek() {
+                    None => {
+                        // we are at the end of the haystack, return a "full" match.
+                        return SearchStep::Match(start, self.haystack.len());
                     }
-                    SearchStep::Reject(start, self.haystack.len())
-                },
-                Some((start, _)) => { // !hypernet
-                    while let Some(&(pos, ch)) = self.iter.peek() {
-                        if ch == HYPERNET_START {
-                            return SearchStep::Match(start, pos);
-                        }
+                    Some(&(pos, ch)) if ch == HYPERNET_START => {
+                        // we found a HYPERNET_START marker, match until the character just before
+                        // it.
+                        return SearchStep::Match(start, pos);
+                    },
+                    Some(_) => {
+                        // this char is ours, check the next.
                         self.iter.next();
                     }
-                    SearchStep::Match(start, self.haystack.len())
-                },
+                }
             }
         }
     }
 
-    struct SubnetPattern { }
+    unsafe impl<'a> Searcher<'a> for SegmentSearcher<'a> {
+        fn haystack(&self) -> &'a str {
+            self.haystack
+        }
 
-    impl SubnetPattern {
-        fn new() -> SubnetPattern {
-            SubnetPattern { }
+        fn next(&mut self) -> SearchStep {
+            match self.iter.peek() {
+                Some(&(_, lead)) if lead == HYPERNET_START => self.hypernet(),
+                Some(_)                                    => self.supernet(),
+                None => SearchStep::Done,
+            }
         }
     }
 
-    impl<'a> Pattern<'a> for SubnetPattern {
-        type Searcher = SubnetSearcher<'a>;
+    /// `Pattern` associated with `SegmentSearcher`
+    struct SegmentPattern { }
 
-        fn into_searcher(self, haystack: &'a str) -> SubnetSearcher<'a> {
-            SubnetSearcher::new(haystack)
+    impl SegmentPattern {
+        /// Create a new `SegmentPattern`
+        fn new() -> SegmentPattern {
+            SegmentPattern { }
         }
     }
 
+    impl<'a> Pattern<'a> for SegmentPattern {
+        type Searcher = SegmentSearcher<'a>;
+
+        fn into_searcher(self, haystack: &'a str) -> SegmentSearcher<'a> {
+            SegmentSearcher::new(haystack)
+        }
+    }
+
+    /// A `Searcher` matching ABBA patterns.
     struct AbbaSearcher<'a> {
         haystack: &'a str,
         iter: Skip<Enumerate<Chars<'a>>>,
-        last3: VecDeque<char>,
+        prev3: VecDeque<char>,
     }
 
     impl<'a> AbbaSearcher<'a> {
+        /// Create a new `AbbaSearcher`
         fn new(haystack: &'a str) -> AbbaSearcher<'a> {
-            let last3: VecDeque<_> = haystack.chars().take(3).collect();
+            // NOTE: we want to analyze the haystack characters within the context of a potential
+            // ABBA pattern `abcd` of 4 character long. To do so we setup `prev3` to have the first
+            // three characters from the haystack and `iter` so that `iter.next()` will yield the
+            // fourth character the first time it is called.
+            let prev3: VecDeque<_> = haystack.chars().take(3).collect();
             let iter = haystack.chars().enumerate().skip(3);
             AbbaSearcher {
                 haystack: haystack,
                 iter: iter,
-                last3: last3,
+                prev3: prev3,
             }
         }
     }
@@ -89,16 +139,23 @@ mod internet_protocol_version_7 {
         fn haystack(&self) -> &'a str {
             self.haystack
         }
+
         fn next(&mut self) -> SearchStep {
-            if let Some((index, current)) = self.iter.next() {
-                let (one, two, three) = (self.last3[0], self.last3[1], self.last3[2]);
-                let four = current;
-                self.last3.pop_front();
-                self.last3.push_back(four);
-                if one == four && two == three && one != two {
-                    SearchStep::Match(index - 3, index + 1)
+            // we're looking for an ABBA pattern in a "slice" `abcd` of the haystack. At that point
+            // the first three characters `abc` are remembered (in order) in `self.prev3` and
+            // `self.iter.next()` will yield the fourth `d` character.
+            if let Some((index_of_d, d)) = self.iter.next() {
+                // At that point self.prev3 is guaranteed to contains `abc`.
+                let (a, b, c) = (self.prev3[0], self.prev3[1], self.prev3[2]);
+                let index_of_a = index_of_d - 3;
+                // setup `self.prev3` to contains `bcd`, the next iteration's `abc`.
+                self.prev3.pop_front();
+                self.prev3.push_back(d);
+                // check for an ABBA pattern in `abcd`.
+                if a == d && b == c && a != b {
+                    SearchStep::Match(index_of_a, index_of_d + 1)
                 } else {
-                    SearchStep::Reject(index - 3, index + 1)
+                    SearchStep::Reject(index_of_a, index_of_d + 1)
                 }
             } else {
                 SearchStep::Done
@@ -106,9 +163,11 @@ mod internet_protocol_version_7 {
         }
     }
 
+    /// `Pattern` associated with `AbbaSearcher`
     struct AbbaPattern { }
 
     impl AbbaPattern {
+        /// Create a new `AbbaPattern`
         fn new() -> AbbaPattern {
             AbbaPattern { }
         }
@@ -122,49 +181,85 @@ mod internet_protocol_version_7 {
         }
     }
 
+    /// Represents an `Ipv7Addr` "segment", either an hypernet or a supernet.
     #[derive(Debug)]
-    struct Subnet {
-        is_hypernet: bool,
+    struct Segment {
+        /// `true` if this `Segment` is hypernet, false otherwise (supernet).
+        hypernet: bool,
         number: String,
     }
 
-    impl Subnet {
+    impl Segment {
+        /// Returns `true` if self is a hypernet segment, `false` otherwise.
         fn is_hypernet(&self) -> bool {
-            self.is_hypernet
+            self.hypernet
         }
+
+        /// Returns `true` if self is a supernet segment, `false` otherwise.
+        fn is_supernet(&self) -> bool {
+            !self.hypernet
+        }
+
+        /// Returns `true` if self contains an ABBA pattern, `false` otherwise.
         fn has_abba(&self) -> bool {
-            self.number.matches(AbbaPattern::new()).take(1).next().is_some()
+            // NOTE: could be cached because matching is costly, but we only call it once per
+            // `Segment` so that's ok for now.
+            self.number.matches(AbbaPattern::new()).next().is_some()
         }
     }
 
-    impl FromStr for Subnet {
+    impl FromStr for Segment {
         type Err = String;
 
-        fn from_str(s: &str) -> Result<Subnet, String> {
+        fn from_str(s: &str) -> Result<Segment, String> {
             if s.is_empty() {
-                Err("empty subnet string".to_string())
+                Err("empty segment string".to_string())
             } else if s.starts_with(HYPERNET_START) && s.ends_with(HYPERNET_STOP) {
-                Ok(Subnet { is_hypernet: true,  number: s[1..(s.len() - 1)].to_string() })
+                let number = s[1..(s.len() - 1)].to_string(); // "trim" both markers
+                Ok(Segment { hypernet: true,  number: number })
             } else {
-                Ok(Subnet { is_hypernet: false, number: s.to_string() })
+                let number = s.to_string();
+                Ok(Segment { hypernet: false, number: number })
             }
         }
     }
 
+    /// Represents an IPv7 from the local network of Easter Bunny HQ.
     #[derive(Debug)]
     pub struct Ipv7Addr {
-        subnets: Vec<Subnet>,
+        segments: Vec<Segment>,
     }
 
     impl Ipv7Addr {
+        /// Returns `true` if self has TLS (supporting transport-layer snooping) support, `false`
+        /// otherwise.
+        ///
+        /// > An IP supports TLS if it has an Autonomous Bridge Bypass Annotation, or ABBA […]
+        /// > However, the IP also must not have an ABBA within any hypernet sequences […]
         pub fn has_tls_support(&self) -> bool {
             // we have four cases to consider:
-            // 1. one  of our hypernet has ABBA and one of our non-hypernet has ABBA
-            // 2. one  of our hypernet has ABBA and no  of our non-hypernet has ABBA
-            // 3. none of our hypernet has ABBA and one of our non-hypernet has ABBA
-            // 4. none of our hypernet has ABBA and no  of our non-hypernet has ABBA
-            !self.subnets.iter().any(|subnet|  subnet.is_hypernet() && subnet.has_abba()) &&
-             self.subnets.iter().any(|subnet| !subnet.is_hypernet() && subnet.has_abba())
+            //
+            // 1. one  of our hypernet segments has ABBA and one  of our supernet segments has ABBA
+            // 2. one  of our hypernet segments has ABBA and none of our supernet segments has ABBA
+            // 3. none of our hypernet segments has ABBA and one  of our supernet segments has ABBA
+            // 4. none of our hypernet segments has ABBA and none of our supernet segments has ABBA
+            //
+            // Of the four cases only one, namely #3, is a success (i.e. has TLS support). #1 and
+            // #2 fail because of one of our hypernet segment has ABBA and #4 fail because of the
+            // lack of any supernet segment with ABBA.
+            //
+            // Here we're considering the analyze order between our hypernet segments first vs our
+            // supernet segments first. Since we don't have any clue and to simplify our reasoning
+            // we consider that having ABBA is equally likely in a hypernet segment and a supernet
+            // segment of the same length.
+            //
+            // Intuitively, we find that analyzing our hypernet segments first should be faster
+            // because we can "shortcut" (i.e. skip analyzing our supernet segments) in cases #1
+            // and #2 as soon as the first hypernet segment with ABBA is found. If we analyze our
+            // supernet segments first we can "shortcut" in cases #2 and #4 but only after having
+            // analyzing all of them.
+            !self.segments.iter().filter(|&seg| seg.is_hypernet()).any(|seg| seg.has_abba()) &&
+             self.segments.iter().filter(|&seg| seg.is_supernet()).any(|seg| seg.has_abba())
         }
     }
 
@@ -172,11 +267,11 @@ mod internet_protocol_version_7 {
         type Err = String;
 
         fn from_str(s: &str) -> Result<Ipv7Addr, String> {
-            let mut subnets = Vec::new();
-            for sub in s.matches(SubnetPattern::new()) {
-                subnets.push(sub.parse()?);
+            let mut segments = Vec::new();
+            for sub_str in s.matches(SegmentPattern::new()) {
+                segments.push(sub_str.parse()?);
             }
-            Ok(Ipv7Addr { subnets: subnets })
+            Ok(Ipv7Addr { segments: segments })
         }
     }
 }
@@ -186,13 +281,18 @@ use std::io::Read;
 use internet_protocol_version_7::*;
 
 fn main() {
-    // acquire data from stdin.
+    // Acquire data from stdin.
     let mut input = String::new();
     let stdin = std::io::stdin();
     stdin.lock().read_to_string(&mut input).expect("no input given");
 
-    let xs: Vec<Ipv7Addr> = input.lines().map(|line| line.parse().unwrap()).collect();
-    println!("{}", xs.into_iter().filter(|ip| ip.has_tls_support()).count());
+    // Parse one Ipv7Addr per line of input.
+    let ips: Vec<Ipv7Addr> = input.lines().map(|line| line.parse().unwrap()).collect();
+
+    // Compute and report the number of `Ipv7Addr` supporting transport-layer snooping.
+    let tls_supporting_count = ips.iter().filter(|ip| ip.has_tls_support()).count();
+    println!("{} IPv7 with TLS (transport-layer snooping) support.",
+        tls_supporting_count);
 }
 
 #[test]
@@ -206,6 +306,7 @@ fn part1_first_example() {
 fn part1_second_example() {
     let ip: Ipv7Addr = "abcd[bddb]xyyx".parse().unwrap();
     println!("{:?}", ip);
+    assert!(!ip.has_tls_support());
 }
 
 #[test]
