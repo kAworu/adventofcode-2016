@@ -1,6 +1,6 @@
 [root]
 name = "how_about_a_nice_game_of_chess"
-version = "0.9.0"
+version = "1.0.0"
 dependencies = [
  "openssl 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "try_opt 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
