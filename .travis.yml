@@ -1,0 +1,14 @@
+language: rust
+dist: trusty
+sudo: false
+
+rust:
+  - nightly
+
+addons:
+  apt:
+    packages:
+    - pkg-config
+    - libssl-dev
+
+script: ./travis-test-all.sh
