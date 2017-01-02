@@ -3,113 +3,9 @@
 
 mod internet_protocol_version_7 {
     use ::std::collections::{VecDeque, HashSet};
-    use ::std::iter::{Peekable, Enumerate, Skip, FromIterator};
+    use ::std::iter::{Enumerate, Skip, FromIterator};
     use ::std::str::pattern::{Pattern, Searcher, SearchStep};
     use ::std::str::{Chars, FromStr};
-
-    /// The hypernet start/stop markers in an `Ipv7Addr`.
-    const HYPERNET_START: char = '[';
-    const HYPERNET_STOP:  char = ']';
-
-    /// A `Searcher` matching both `Ipv7Addr` `Segments` types (i.e. hypernet and supernet).
-    struct SegmentSearcher<'a> {
-        haystack: &'a str,
-        iter: Peekable<Enumerate<Chars<'a>>>,
-    }
-
-    impl<'a> SegmentSearcher<'a> {
-        /// Create a new `SegmentSearcher`.
-        fn new(haystack: &'a str) -> SegmentSearcher<'a> {
-            SegmentSearcher {
-                haystack: haystack,
-                iter: haystack.chars().enumerate().peekable(),
-            }
-        }
-
-        /// Matches a hypernet Segment, something like `[foo]`.
-        ///
-        /// # Panic
-        ///
-        /// when the next char is not the `HYPERNET_START` marker.
-        fn hypernet(&mut self) -> SearchStep {
-            // sanity check: look for the hypernet start marker.
-            let (start, lead) = self.iter.next().unwrap();
-            if lead != HYPERNET_START {
-                panic!(format!("expected {} (HYPERNET_START), got {}", HYPERNET_START, lead));
-            }
-            // find the matching hypernet stop marker.
-            if let Some((stop, _)) = self.iter.find(|&(_, ch)| ch == HYPERNET_STOP) {
-                // NOTE: (stop + 1) to include the HYPERNET_STOP in the match.
-                SearchStep::Match(start, stop + 1)
-            } else {
-                SearchStep::Reject(start, self.haystack.len())
-            }
-        }
-
-        /// Matches a supernet Segment, something like `foo`.
-        ///
-        /// # Panic
-        ///
-        /// when the next char is the `HYPERNET_START` marker.
-        fn supernet(&mut self) -> SearchStep {
-            // sanity check: look for something else than the hypernet start marker.
-            let (start, lead) = self.iter.next().unwrap();
-            if lead == HYPERNET_START {
-                panic!(format!("unexpected {} (HYPERNET_START)", HYPERNET_START));
-            }
-            loop {
-                // NOTE: Because we don't want to "eat" the next HYPERNET_START marker from our
-                // iterator, we have to use peek() and "find by hand".
-                match self.iter.peek() {
-                    None => {
-                        // we are at the end of the haystack, return a "full" match.
-                        return SearchStep::Match(start, self.haystack.len());
-                    }
-                    Some(&(pos, ch)) if ch == HYPERNET_START => {
-                        // we found a HYPERNET_START marker, match until the character just before
-                        // it.
-                        return SearchStep::Match(start, pos);
-                    },
-                    Some(_) => {
-                        // this char is ours, check the next.
-                        self.iter.next();
-                    }
-                }
-            }
-        }
-    }
-
-    unsafe impl<'a> Searcher<'a> for SegmentSearcher<'a> {
-        fn haystack(&self) -> &'a str {
-            self.haystack
-        }
-
-        fn next(&mut self) -> SearchStep {
-            match self.iter.peek() {
-                Some(&(_, lead)) if lead == HYPERNET_START => self.hypernet(),
-                Some(_) => self.supernet(),
-                None => SearchStep::Done,
-            }
-        }
-    }
-
-    /// `Pattern` associated with `SegmentSearcher`.
-    struct SegmentPattern { }
-
-    impl SegmentPattern {
-        /// Create a new `SegmentPattern` matching both hypernet and supernet segments.
-        fn all() -> SegmentPattern {
-            SegmentPattern { }
-        }
-    }
-
-    impl<'a> Pattern<'a> for SegmentPattern {
-        type Searcher = SegmentSearcher<'a>;
-
-        fn into_searcher(self, haystack: &'a str) -> SegmentSearcher<'a> {
-            SegmentSearcher::new(haystack)
-        }
-    }
 
     /// A `Searcher` matching ABBA patterns.
     struct AbbaSearcher<'a> {
@@ -337,22 +233,6 @@ mod internet_protocol_version_7 {
         }
     }
 
-    impl FromStr for Segment {
-        type Err = String;
-
-        fn from_str(s: &str) -> Result<Segment, String> {
-            if s.is_empty() {
-                Err("empty segment string".to_string())
-            } else if s.starts_with(HYPERNET_START) && s.ends_with(HYPERNET_STOP) {
-                let number = s[1..(s.len() - 1)].to_string(); // "trim" both markers
-                Ok(Segment { hypernet: true,  number: number })
-            } else {
-                let number = s.to_string();
-                Ok(Segment { hypernet: false, number: number })
-            }
-        }
-    }
-
     /// Represents an IPv7 from the local network of Easter Bunny HQ.
     #[derive(Debug)]
     pub struct Ipv7Addr {
@@ -416,13 +296,38 @@ mod internet_protocol_version_7 {
         }
     }
 
+    /// The hypernet start/stop markers in an `Ipv7Addr`.
+    const HYPERNET_START: char = '[';
+    const HYPERNET_STOP:  char = ']';
+
     impl FromStr for Ipv7Addr {
         type Err = String;
 
         fn from_str(s: &str) -> Result<Ipv7Addr, String> {
             let mut segments = Vec::new();
-            for sub_str in s.matches(SegmentPattern::all()) {
-                segments.push(sub_str.parse()?);
+            let mut start = 0;
+            let mut target = HYPERNET_START;
+            for (i, c) in s.chars().enumerate() {
+                if c == target {
+                    segments.push(Segment {
+                        hypernet: (target == HYPERNET_STOP),
+                        number: s[start..i].to_string()
+                    });
+                    // update state for the next segment
+                    start = i + 1;
+                    target = if target == HYPERNET_START {
+                        HYPERNET_STOP
+                    } else {
+                        HYPERNET_START
+                    };
+                }
+            }
+            // trailing supernet handling
+            if start < s.len() - 1 {
+                segments.push(Segment {
+                    hypernet: false,
+                    number: s[start..s.len()].to_string()
+                });
             }
             Ok(Ipv7Addr { segments: segments })
         }
