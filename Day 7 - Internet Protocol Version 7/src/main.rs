@@ -2,31 +2,24 @@
 #![feature(pattern)]
 
 mod internet_protocol_version_7 {
-    use ::std::collections::{VecDeque, HashSet};
-    use ::std::iter::{Enumerate, Skip, FromIterator};
+    use ::std::collections::HashSet;
+    use ::std::iter::{Enumerate, FromIterator};
+    use ::std::slice::Windows;
+    use ::std::str::FromStr;
     use ::std::str::pattern::{Pattern, Searcher, SearchStep};
-    use ::std::str::{Chars, FromStr};
 
     /// A `Searcher` matching ABBA patterns.
     struct AbbaSearcher<'a> {
         haystack: &'a str,
-        iter: Skip<Enumerate<Chars<'a>>>,
-        prev3: VecDeque<char>,
+        it: Enumerate<Windows<'a, u8>>,
     }
 
     impl<'a> AbbaSearcher<'a> {
         /// Create a new `AbbaSearcher`.
         fn new(haystack: &'a str) -> AbbaSearcher<'a> {
-            // NOTE: we want to analyze the haystack characters within the context of a potential
-            // ABBA pattern `abcd` of 4 character long. To do so we setup `prev3` to have the first
-            // three characters from the haystack and `iter` so that `iter.next()` will yield the
-            // fourth character the first time it is called.
-            let prev3: VecDeque<_> = haystack.chars().take(3).collect();
-            let iter = haystack.chars().enumerate().skip(3);
             AbbaSearcher {
                 haystack: haystack,
-                iter: iter,
-                prev3: prev3,
+                it: haystack.as_bytes().windows(4).enumerate(),
             }
         }
     }
@@ -37,21 +30,13 @@ mod internet_protocol_version_7 {
         }
 
         fn next(&mut self) -> SearchStep {
-            // we're looking for an ABBA pattern in a "slice" `abcd` of the haystack. At that point
-            // the first three characters `abc` are remembered (in order) in `self.prev3` and
-            // `self.iter.next()` will yield the fourth `d` character.
-            if let Some((index_of_d, d)) = self.iter.next() {
-                // At that point self.prev3 is guaranteed to contains `abc`.
-                let (a, b, c) = (self.prev3[0], self.prev3[1], self.prev3[2]);
-                let index_of_a = index_of_d - 3;
-                // setup `self.prev3` to contains `bcd`, the next iteration's `abc`.
-                self.prev3.pop_front();
-                self.prev3.push_back(d);
+            if let Some((i, slice)) = self.it.next() {
+                let (a, b, c, d) = (slice[0], slice[1], slice[2], slice[3]);
                 // check for an ABBA pattern in `abcd`.
                 if a == d && b == c && a != b {
-                    SearchStep::Match(index_of_a, index_of_d + 1)
+                    SearchStep::Match(i, i + 4)
                 } else {
-                    SearchStep::Reject(index_of_a, index_of_d + 1)
+                    SearchStep::Reject(i, i + 4)
                 }
             } else {
                 SearchStep::Done
@@ -111,24 +96,16 @@ mod internet_protocol_version_7 {
     /// Represents a `Searcher` matching ABA/BAB patterns.
     struct BabSearcher<'a> {
         haystack: &'a str,
-        iter: Skip<Enumerate<Chars<'a>>>,
-        prev2: VecDeque<char>,
+        it: Enumerate<Windows<'a, u8>>,
         match_only: Option<&'a HashSet<Bab>>,
     }
 
     impl<'a> BabSearcher<'a> {
         /// Create a new `BabSearcher`.
         fn new(haystack: &'a str, match_only: Option<&'a HashSet<Bab>>) -> BabSearcher<'a> {
-            // NOTE: we want to analyze the haystack characters within the context of a potential
-            // ABA/BAB pattern `xyz` of 3 character long. To do so we setup `prev2` to have the
-            // first two characters from the haystack and `iter` so that `iter.next()` will yield
-            // the third character the first time it is called.
-            let prev2: VecDeque<_> = haystack.chars().take(2).collect();
-            let iter = haystack.chars().enumerate().skip(2);
             BabSearcher {
                 haystack: haystack,
-                iter: iter,
-                prev2: prev2,
+                it: haystack.as_bytes().windows(3).enumerate(),
                 match_only: match_only,
             }
         }
@@ -140,28 +117,19 @@ mod internet_protocol_version_7 {
         }
 
         fn next(&mut self) -> SearchStep {
-            // we're looking for an ABA/BAB pattern in a "slice" `xyz` of the haystack. At that
-            // point the first two characters `xy` are remembered (in order) in `self.prev2` and
-            // `self.iter.next()` will yield the third `z` character.
-            if let Some((index_of_z, z)) = self.iter.next() {
-                // At that point self.prev2 is guaranteed to contains `xy`.
-                let (x, y) = (self.prev2[0], self.prev2[1]);
-                let index_of_x = index_of_z - 2;
-                // setup `self.prev2` to contains `yz`, the next iteration's `xy`.
-                self.prev2.pop_front();
-                self.prev2.push_back(z);
-                // check for an ABA/BAB pattern in `xyz`.
+            if let Some((i, slice)) = self.it.next() {
+                let (x, y, z) = (slice[0], slice[1], slice[2]);
                 if x == z && x != y {
                     // if we have a match_only, reject unless our freshly found ABA/BAB pattern is
                     // in the set.
                     if let Some(set) = self.match_only {
-                        if !set.contains(&Bab { b: x, a: y }) {
-                            return SearchStep::Reject(index_of_x, index_of_z + 1);
+                        if !set.contains(&Bab { b: x as char, a: y as char }) {
+                            return SearchStep::Reject(i, i + 3);
                         }
                     }
-                    SearchStep::Match(index_of_x, index_of_z + 1)
+                    SearchStep::Match(i, i + 3)
                 } else {
-                    SearchStep::Reject(index_of_x, index_of_z + 1)
+                    SearchStep::Reject(i, i + 3)
                 }
             } else {
                 SearchStep::Done
