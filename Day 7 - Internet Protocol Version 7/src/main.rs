@@ -173,7 +173,7 @@ mod internet_protocol_version_7 {
         }
 
         /// Returns an iterator over all the `Bab` patterns contained in self.
-        fn bab<'a>(&'a self) -> Map<Matches<'a, BabPattern>, fn(&str) -> Bab>
+        fn bab(&self) -> Map<Matches<BabPattern>, fn(&str) -> Bab>
         {
             // https://www.reddit.com/r/rust/comments/31x7jj/returning_iterators_from_a_function/
             // helped me a lot here.
