@@ -3,9 +3,9 @@
 
 mod internet_protocol_version_7 {
     use ::std::collections::HashSet;
-    use ::std::iter::{Enumerate, FromIterator};
+    use ::std::iter::{Enumerate, Map};
     use ::std::slice::Windows;
-    use ::std::str::FromStr;
+    use ::std::str::{FromStr, Matches};
     use ::std::str::pattern::{Pattern, Searcher, SearchStep};
 
     /// A `Searcher` matching ABBA patterns.
@@ -97,16 +97,14 @@ mod internet_protocol_version_7 {
     struct BabSearcher<'a> {
         haystack: &'a str,
         it: Enumerate<Windows<'a, u8>>,
-        match_only: Option<&'a HashSet<Bab>>,
     }
 
     impl<'a> BabSearcher<'a> {
         /// Create a new `BabSearcher`.
-        fn new(haystack: &'a str, match_only: Option<&'a HashSet<Bab>>) -> BabSearcher<'a> {
+        fn new(haystack: &'a str) -> BabSearcher<'a> {
             BabSearcher {
                 haystack: haystack,
                 it: haystack.as_bytes().windows(3).enumerate(),
-                match_only: match_only,
             }
         }
     }
@@ -120,13 +118,6 @@ mod internet_protocol_version_7 {
             if let Some((i, slice)) = self.it.next() {
                 let (x, y, z) = (slice[0], slice[1], slice[2]);
                 if x == z && x != y {
-                    // if we have a match_only, reject unless our freshly found ABA/BAB pattern is
-                    // in the set.
-                    if let Some(set) = self.match_only {
-                        if !set.contains(&Bab { b: x as char, a: y as char }) {
-                            return SearchStep::Reject(i, i + 3);
-                        }
-                    }
                     SearchStep::Match(i, i + 3)
                 } else {
                     SearchStep::Reject(i, i + 3)
@@ -138,28 +129,20 @@ mod internet_protocol_version_7 {
     }
 
     /// `Pattern` associated with `BabSearcher`.
-    struct BabPattern<'a> {
-        match_only: Option<&'a HashSet<Bab>>
-    }
+    struct BabPattern { }
 
-    impl<'a> BabPattern<'a> {
+    impl BabPattern {
         /// Create a new `BabPattern` matching all ABA/BAB sequences.
-        fn all() -> BabPattern<'a> {
-            BabPattern { match_only: None }
-        }
-
-        /// Create a new `BabPattern` matching only the ABA/BAB sequences contained in the given
-        /// `babset`.
-        fn matching(babset: &'a HashSet<Bab>) -> BabPattern<'a> {
-            BabPattern { match_only: Some(babset) }
+        fn all() -> BabPattern {
+            BabPattern { }
         }
     }
 
-    impl<'a> Pattern<'a> for BabPattern<'a> {
+    impl<'a> Pattern<'a> for BabPattern {
         type Searcher = BabSearcher<'a>;
 
         fn into_searcher(self, haystack: &'a str) -> BabSearcher<'a> {
-            BabSearcher::new(haystack, self.match_only)
+            BabSearcher::new(haystack)
         }
     }
 
@@ -189,15 +172,15 @@ mod internet_protocol_version_7 {
             self.number.matches(AbbaPattern::all()).next().is_some()
         }
 
-        /// Returns all the unique ABA/BAB patterns contained in self.
-        fn babset(&self) -> HashSet<Bab> {
-            self.number.matches(BabPattern::all()).map(|s| s.parse().unwrap()).collect()
-        }
-
-        /// Returns `true` if self contains any ABA/BAB patterns from the given `babset`, `false`
-        /// otherwise.
-        fn has_any_bab(&self, babset: &HashSet<Bab>) -> bool {
-            self.number.matches(BabPattern::matching(babset)).next().is_some()
+        /// Returns an iterator over all the `Bab` patterns contained in self.
+        fn bab<'a>(&'a self) -> Map<Matches<'a, BabPattern>, fn(&str) -> Bab>
+        {
+            // https://www.reddit.com/r/rust/comments/31x7jj/returning_iterators_from_a_function/
+            // helped me a lot here.
+            fn parse(s: &str) -> Bab {
+                s.parse().unwrap()
+            }
+            self.number.matches(BabPattern::all()).map(parse)
         }
     }
 
@@ -248,19 +231,20 @@ mod internet_protocol_version_7 {
             let mut hypernets = self.segments.iter().filter(|&seg| seg.is_hypernet());
             let     supernets = self.segments.iter().filter(|&seg| seg.is_supernet());
             // collect from all the Area-Broadcast Accessor from the supernet sequences.
-            let abaset = supernets.fold(HashSet::new(), |mut acc, ref seg| {
-                acc.extend(seg.babset());
-                acc
-            });
+            let mut babset = HashSet::new();
+            for snet in supernets {
+                for aba in snet.bab() {
+                    babset.insert(aba.inverse());
+                }
+            }
             // If we did not find any ABA we're done.
-            if abaset.is_empty() {
+            if babset.is_empty() {
                 return false;
             }
-            // build a BAB set from the ABA, "inversing" every elements.
-            let babset = HashSet::from_iter(abaset.iter().map(|aba| aba.inverse()));
-            // search through all our hypernet segments for one having a matching Byte Allocation
-            // Block.
-            hypernets.any(|seg| seg.has_any_bab(&babset))
+            // look through our hypernet for the first BAB match.
+            hypernets.any(|seg| {
+                seg.bab().any(|bab| babset.contains(&bab))
+            })
         }
     }
 
