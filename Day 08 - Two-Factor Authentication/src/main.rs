@@ -3,7 +3,7 @@ extern crate lazy_static;
 extern crate regex;
 
 mod two_factor_authentication {
-    use regex::Regex;
+    use ::regex::Regex;
     use ::std::fmt::Display;
     use ::std::str::FromStr;
 
@@ -72,7 +72,7 @@ mod two_factor_authentication {
         }
     }
 
-    /// Represent A little smashable screen.
+    /// Represent a little smashable screen.
     pub struct Screen {
         width: usize,
         height: usize,
