@@ -72,7 +72,7 @@ mod two_factor_authentication {
         }
     }
 
-    /// A little screen, smashable.
+    /// Represent A little smashable screen.
     pub struct Screen {
         width: usize,
         height: usize,
@@ -204,7 +204,8 @@ fn main() {
         screen.execute(operation);
     }
 
-    // print the screen's voltage usage.
+    // print the screen display and voltage usage.
+    println!("{}", screen);
     println!("The screen's voltage usage is: {}", screen.voltage_usage());
 }
 
