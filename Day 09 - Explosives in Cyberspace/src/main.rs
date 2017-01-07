@@ -43,7 +43,7 @@ mod explosives_in_cyberspace {
 
         /// Returns the uncompressed data length of the file.
         pub fn uncompressed_len(&self) -> usize {
-            self.nodes.iter().map(|token| token.uncompressed_len()).sum()
+            self.nodes.iter().map(|node| node.uncompressed_len()).sum()
         }
 
         /// Build a new `Ezip` containing the given nodes.
