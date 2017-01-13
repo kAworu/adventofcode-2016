@@ -9,3 +9,9 @@ http://adventofcode.com puzzles solutions
 > expert who wants to stay sharp as they are for a beginner who is just
 > learning to code. Each puzzle calls upon different skills and has two parts
 > that build on a theme.
+
+## Why Rust?
+
+I needed an excuse to learn Rust and it was perfect. As a result, expect the code
+to be over-engineered on purpose because I wanted to learn new mechanisms and/or
+use some fancy crate.
