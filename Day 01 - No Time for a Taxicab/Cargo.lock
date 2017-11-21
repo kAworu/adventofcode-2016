@@ -1,14 +1,14 @@
-[root]
+[[package]]
+name = "libc"
+version = "0.2.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "no_time_for_a_taxicab"
 version = "1.0.0"
 dependencies = [
  "rand 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
-
-[[package]]
-name = "libc"
-version = "0.2.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "rand"

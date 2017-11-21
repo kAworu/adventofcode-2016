@@ -1,11 +1,3 @@
-[root]
-name = "how_about_a_nice_game_of_chess"
-version = "1.0.0"
-dependencies = [
- "openssl 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "try_opt 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
 [[package]]
 name = "bitflags"
 version = "0.7.0"
@@ -18,6 +10,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi-build 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "how_about_a_nice_game_of_chess"
+version = "1.0.0"
+dependencies = [
+ "openssl 0.9.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "try_opt 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

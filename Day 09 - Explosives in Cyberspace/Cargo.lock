@@ -1,4 +1,4 @@
-[root]
+[[package]]
 name = "explosives_in_cyberspace"
 version = "1.0.0"
 dependencies = [
