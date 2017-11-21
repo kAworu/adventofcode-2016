@@ -17,6 +17,13 @@ mod balance_bots {
     #[derive(Hash, Eq, PartialEq, PartialOrd, Copy, Clone, Debug)]
     pub struct Microchip(pub Value);
 
+    impl Microchip {
+        /// Returns this microchip's value, syntaxic sugar for `self.0`.
+        pub fn value(&self) -> Value {
+            self.0
+        }
+    }
+
     /// Used to make the distinction between lower-value and higher-value microchip.
     #[derive(Hash, Eq, PartialEq, PartialOrd, Copy, Clone, Debug)]
     enum MicrochipWeight {
@@ -292,12 +299,28 @@ mod balance_bots {
                 }
             }
         }
+
+        /// "map" a vector of output bin ids to their given microchip.
+        pub fn chips_in_bins(&self, bin_ids: &Vec<Id>) -> Vec<Microchip> {
+            let mut memo: HashMap<Id, Microchip2> = HashMap::new();
+            bin_ids.iter().map(|id| self.chip_in_bin(self.bins.get(id).unwrap(), &mut memo)).collect()
+        }
+
+        /// Returns an output bin microchip given.
+        fn chip_in_bin(&self, bin: &Bin, memo: &mut HashMap<Id, Microchip2>) -> Microchip {
+            self.given_microchip(bin.from, memo)
+        }
     }
 }
 
 
 use std::io::Read;
 use balance_bots::*;
+
+// simple input parsing helper
+fn parse_instructions(input: String) -> Vec<Instruction> {
+    input.lines().map(|line| line.parse().unwrap()).collect()
+}
 
 fn main() {
     // acquire data from stdin.
@@ -306,7 +329,7 @@ fn main() {
     stdin.lock().read_to_string(&mut input).expect("no input given");
 
     // parse the instructions, build the factory.
-    let instructions: Vec<Instruction> = input.lines().map(|line| line.parse().unwrap()).collect();
+    let instructions = parse_instructions(input);
     let factory = Factory::build_from(&instructions);
 
     // part 1
@@ -316,6 +339,12 @@ fn main() {
     } else {
         println!("Failed to find the robot responsible for comparing {:?} and {:?}.", m0, m1);
     }
+
+    // part 2
+    let bins: Vec<Id> = vec![0, 1, 2];
+    let microchips = factory.chips_in_bins(&bins);
+    let product: Value = microchips.iter().map(|chip| chip.value()).product();
+    println!("the product of the output bins {:?} microchip values is {:?}.", bins, product);
 }
 
 
@@ -328,7 +357,24 @@ fn part1_example() {
         bot 1 gives low to output 1 and high to bot 0
         bot 0 gives low to output 2 and high to output 0
         value 2 goes to bot 2".to_string();
-    let instructions: Vec<Instruction> = input.lines().map(|line| line.parse().unwrap()).collect();
+    let instructions = parse_instructions(input);
     let factory = Factory::build_from(&instructions);
     assert_eq!(factory.robot_comparing(Microchip(2), Microchip(5)), Some(2));
+}
+
+#[test]
+fn part2_example() {
+    let input =
+        "value 5 goes to bot 2
+        bot 2 gives low to bot 1 and high to bot 0
+        value 3 goes to bot 1
+        bot 1 gives low to output 1 and high to bot 0
+        bot 0 gives low to output 2 and high to output 0
+        value 2 goes to bot 2".to_string();
+    let instructions = parse_instructions(input);
+    let factory = Factory::build_from(&instructions);
+    let bins: Vec<Id> = vec![0, 1, 2];
+    let microchips = factory.chips_in_bins(&bins);
+    let product: Value = microchips.iter().map(|chip| chip.value()).product();
+    assert_eq!(product, 5 * 2 * 3);
 }
