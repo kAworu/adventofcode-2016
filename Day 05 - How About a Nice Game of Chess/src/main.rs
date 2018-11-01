@@ -37,8 +37,8 @@ mod how_about_a_nice_game_of_chess {
                 'critical: loop {
                     try_opt!(self.hasher.update(self.door_id).ok());
                     try_opt!(self.hasher.update(self.index.to_string().as_bytes()).ok());
-                    // NOTE: finish() will reset the hasher state so we can reuse it later on.
-                    let hash = try_opt!(self.hasher.finish().ok());
+                    // NOTE: finish2() will reset the hasher state so we can reuse it later on.
+                    let hash = try_opt!(self.hasher.finish2().ok());
                     self.index += 1;
                     // Since one byte is two characters in hex representation, we test the first two
                     // byte and the most significants 4 bits ("high part") of the third.
