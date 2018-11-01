@@ -48,13 +48,6 @@ mod balance_bots {
         }
     }
 
-    /// Identify an microchip donation output, either a robot or an output bin.
-    #[derive(Eq, PartialEq, PartialOrd, Copy, Clone, Debug)]
-    pub enum Output {
-        Robot(Id),
-        Bin(Id),
-    }
-
     /// Used to make a link from an output to their input. An input can be:
     /// 1. a robot making a `Donation` of its lower-value microchip,
     /// 2. a robot making a `Donation` of its higher-value microchip,
@@ -68,6 +61,13 @@ mod balance_bots {
         Input {
             chip: Microchip,
         }
+    }
+
+    /// Identify an microchip donation output, either a robot or an output bin.
+    #[derive(Eq, PartialEq, PartialOrd, Copy, Clone, Debug)]
+    pub enum Output {
+        Robot(Id),
+        Bin(Id),
     }
 
     /// Represents a robot from the factory.
@@ -300,7 +300,8 @@ mod balance_bots {
             }
         }
 
-        /// "map" a vector of output bin ids to their given microchip.
+        /// "map" a vector of output bin ids to their given microchip. Panic if any of the bin id
+        /// is invalid.
         pub fn chips_in_bins(&self, bin_ids: &Vec<Id>) -> Vec<Microchip> {
             let mut memo: HashMap<Id, Microchip2> = HashMap::new();
             bin_ids.iter().map(|id| self.chip_in_bin(self.bins.get(id).unwrap(), &mut memo)).collect()
