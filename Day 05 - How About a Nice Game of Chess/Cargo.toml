@@ -4,5 +4,5 @@ version = "1.0.0"
 authors = ["Alexandre Perrin <alex@kaworu.ch>"]
 
 [dependencies]
-openssl = "^0.9.3"
+openssl = "^0.10.26"
 try_opt = "^0.1.1"
