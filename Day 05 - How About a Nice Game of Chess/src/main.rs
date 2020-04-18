@@ -1,5 +1,3 @@
-#[macro_use]
-extern crate try_opt;
 extern crate openssl;
 
 mod how_about_a_nice_game_of_chess {
@@ -17,7 +15,7 @@ mod how_about_a_nice_game_of_chess {
             /// Create a new `InterestingHashFinder` for a given door.
             pub fn new(door_id: &'a str) -> Option<InterestingHashFinder<'a>> {
                 let mdigest = MessageDigest::md5();
-                let hasher  = try_opt!(Hasher::new(mdigest).ok());
+                let hasher  = Hasher::new(mdigest).ok()?;
                 Some(InterestingHashFinder {
                     door_id: door_id.as_bytes(),
                     index: 0,
@@ -34,11 +32,11 @@ mod how_about_a_nice_game_of_chess {
             /// > A hash indicates the next character in the password if its hexadecimal representation
             /// > starts with five zeroes.
             fn next(&mut self) -> Option<Self::Item> {
-                'critical: loop {
-                    try_opt!(self.hasher.update(self.door_id).ok());
-                    try_opt!(self.hasher.update(self.index.to_string().as_bytes()).ok());
+                loop {
+                    self.hasher.update(self.door_id).ok()?;
+                    self.hasher.update(self.index.to_string().as_bytes()).ok()?;
                     // NOTE: finish() will reset the hasher state so we can reuse it later on.
-                    let hash = try_opt!(self.hasher.finish().ok());
+                    let hash = self.hasher.finish().ok()?;
                     self.index += 1;
                     // Since one byte is two characters in hex representation, we test the first two
                     // byte and the most significants 4 bits ("high part") of the third.

@@ -82,7 +82,7 @@ mod explosives_in_cyberspace {
         named!(uncompressed<EzipNode>,
             do_parse!(
                 data: map_res!(take_while!(not_marker_start), str::from_utf8) >>
-                (EzipNode::Uncompressed(data.trim_right().to_string()))
+                (EzipNode::Uncompressed(data.trim_end().to_string()))
             )
         );
 

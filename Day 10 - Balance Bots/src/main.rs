@@ -190,7 +190,7 @@ mod balance_bots {
             for &instruction in instructions.iter() {
                 match instruction {
                     Instruction::Take { robot_id: receiver_id, chip } => {
-                        let mut inputs = robots_inputs.entry(receiver_id).or_insert_with(|| Vec::new());
+                        let inputs = robots_inputs.entry(receiver_id).or_insert_with(|| Vec::new());
                         inputs.push(Gift::Input { chip });
                     },
                     Instruction::Donate { robot_id: from_robot_id, low, high } => {
@@ -199,7 +199,7 @@ mod balance_bots {
                             robots_outputs.insert((from_robot_id, weight), output);
                             match output {
                                 Output::Robot(robot_id) => {
-                                    let mut inputs = robots_inputs.entry(robot_id).or_insert_with(|| Vec::new());
+                                    let inputs = robots_inputs.entry(robot_id).or_insert_with(|| Vec::new());
                                     inputs.push(Gift::Donation { from_robot_id, weight });
                                 },
                                 Output::Bin(bin_id) => {
