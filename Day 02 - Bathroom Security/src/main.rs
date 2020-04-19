@@ -320,7 +320,7 @@ fn main() {
     stdin.lock().read_to_string(&mut input).expect("no input given");
 
     // parse the provided document instructions
-    let document: BathroomDocument = input.parse().unwrap();
+    let document: BathroomDocument = input.parse().expect("bad input");
 
     let mut keypad = expected_bathroom_keypad();
     Finger::follow(&document, &mut keypad);
